@@ -108,8 +108,6 @@ class GrappleDoom(ShowBase):
             # get mouse data
             self.deltaX = base.mouseWatcherNode.getMouseX()
             self.deltaY = base.mouseWatcherNode.getMouseY()
-            # if (self.deltaX > 0.9999 or self.deltaX < -0.9999 or self.deltaY > 0.9999 or self.deltaY < -0.9999):
-            #     d
 
             # get player data
             playerPos = self.DoomDude.getPos()
