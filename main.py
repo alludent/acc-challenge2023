@@ -67,14 +67,14 @@ class GrappleDoom(ShowBase):
 
     def update(self, task):
          # Get the global clock and compute the time since the last frame ------------------------------------------------------
-        self.clock = ClockObject.getGlobalClock()
-        self.deltaT = self.clock.getDt()
+        clock = ClockObject.getGlobalClock()
+        deltaT = clock.getDt()
 
         # camera mouse movement --------------------------------------------------------------------------------------------------------
         self.updateCamera()
 
         # player movement-------------------------------------------------------------------------------------------------------------
-        self.updatePlayer(self.deltaT)
+        self.updatePlayer(deltaT)
 
         if self.keyMap["shoot"]:
             print ("Shoot!")
@@ -107,25 +107,6 @@ class GrappleDoom(ShowBase):
     def updateKeyMap(self, controlName, controlState):
         self.keyMap[controlName] = controlState
 
-    def updatePlayer(self, deltaT):
-        # player movement---------------------------------------------------------------------------------------------------------
-        # get input direction from key map
-        inputDir = Vec3(self.keyMap["right"] - self.keyMap["left"], 0, self.keyMap["up"] - self.keyMap["down"]).normalized()
-
-        # calculate camera heading in radians 
-        # heading is the left and right movement (Panda3D Hpr sphere illustration)
-        camHeading = self.cameraHpr.getX() * pi / 180.0
-
-        # calculate the direction based on the camera's rotation
-        forwardDir = Vec3(-sin(camHeading), cos(camHeading), 0)
-        sideDir = Vec3(cos(camHeading), sin(camHeading), 0)
-
-        # calculate the move direction based on input direction and camera direction
-        moveDir = forwardDir * inputDir.z + sideDir * inputDir.x
-
-        # update player position
-        self.player.setPos(self.player.getPos() + moveDir * self.SPEED * self.deltaT)
-
     def updateCamera(self):
         # reset to center
         base.win.movePointer(0, base.win.getProperties().getXSize()//2, base.win.getProperties().getYSize()//2)
@@ -146,6 +127,26 @@ class GrappleDoom(ShowBase):
             # update camera
             self.camera.setPos(cameraPos)
             self.camera.setHpr(self.cameraHpr)
+
+    def updatePlayer(self, deltaT):
+        # player movement---------------------------------------------------------------------------------------------------------
+        # get input direction from key map
+        inputDir = Vec3(self.keyMap["right"] - self.keyMap["left"], 0, self.keyMap["up"] - self.keyMap["down"]).normalized()
+
+        # calculate camera heading in radians 
+        # heading is the left and right movement (Panda3D Hpr sphere illustration)
+        camHeading = self.cameraHpr.getX() * pi / 180.0
+
+        # calculate the direction based on the camera's rotation
+        forwardDir = Vec3(-sin(camHeading), cos(camHeading), 0)
+        sideDir = Vec3(cos(camHeading), sin(camHeading), 0)
+
+        # calculate the move direction based on input direction and camera direction
+        moveDir = forwardDir * inputDir.z + sideDir * inputDir.x
+
+        # update player position
+        self.player.setPos(self.player.getPos() + moveDir * self.SPEED * deltaT)
+
       
     def UIevent(self):
         pass
