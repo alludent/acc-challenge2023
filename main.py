@@ -104,7 +104,7 @@ class GrappleDoom(ShowBase):
         if self.keyMap["shoot"]:
             print ("Shoot!")
 
-        # Tell the task manager to continue running this task --------------------------------------------------------------------
+        # continue the task --------------------------------------------------------------------
         return task.cont
 
     def updateKeyMap(self, controlName, controlState):
