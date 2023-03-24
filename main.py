@@ -115,19 +115,15 @@ class GrappleDoom(ShowBase):
             playerPos = self.DoomDude.getPos()
             playerHpr = self.DoomDude.getHpr()
             
-            # calculate rotation
-            self.horizontal += self.mouseSens * self.deltaX
-            self.vertical -= self.mouseSens * self.deltaY
-
             # set camera settings
             cameraOffset = Vec3(0, 0, 0)
             cameraPos = playerPos + cameraOffset
             cameraHpr = self.camera.getHpr()
-            cameraHpr.setX(cameraHpr.getX() - self.deltaX * self.mouseSens)  # Adjust the camera pitch
-            cameraHpr.setY(cameraHpr.getY() + self.deltaY * self.mouseSens)
-            # cameraHpr = Vec3(-self.horizontal, self.vertical, 0)  # Use the player's heading(H) to adjust the camera's direction
-            
 
+            # calculate camera movement
+            cameraHpr.setX(cameraHpr.getX() - self.deltaX * self.mouseSens)
+            cameraHpr.setY(cameraHpr.getY() + self.deltaY * self.mouseSens)
+            
             # update camera
             self.camera.setPos(cameraPos)
             self.camera.setHpr(cameraHpr)
