@@ -34,7 +34,7 @@ class GrappleDoom(ShowBase):
 
         # Actor is used for animated models 
         # panda automatically detects player file type
-        self.tempActor = Actor("EntityTex/Player/player", {"walk" : "EntityTex/Player/player_walk"})
+        self.tempActor = Actor("Entities/Player/player", {"walk" : "Entities/Player/player_walk"})
         self.tempActor.reparentTo(self.render)
 
         # camera default is (0,0,0), won't show actor
