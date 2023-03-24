@@ -1,12 +1,10 @@
 from direct.showbase.ShowBase import ShowBase
 from direct.actor.Actor import Actor
-from panda3d.core import WindowProperties
-from panda3d.core import ClockObject
-from panda3d.core import Vec3
+from panda3d.core import *
+# from panda3d.core import WindowProperties
+# from panda3d.core import ClockObject
+# from panda3d.core import Vec3
 # from direct.task.TaskManager import TaskManager
-
-
-SPEED = 5.0
 
 
 # showbase is a base class for the game window
@@ -15,35 +13,47 @@ SPEED = 5.0
 class GrappleDoom(ShowBase):
     def __init__(self):
         # subclass initialized 
-        ShowBase.__init__(self)
+        super().__init__()
 
-        # by default, panda uses mouse based control
-        self.disableMouse()
+        # player settings
+        self.SPEED = 5.0
+        self.mouseSens = 15.0
 
-        # modify window dimensions
-        properties = WindowProperties()
-        properties.setSize(1000, 750)
-        self.win.requestProperties(properties)
+        # modify window dimensions; default is 800 640----------------------------------------------------------------------------
+        # properties = WindowProperties()
+        # properties.setSize(800, 640)
+        # self.win.requestProperties(properties)
+        props = WindowProperties()
+        props.setCursorHidden(False)
+        # confined mouse can't leave window
+        props.setMouseMode(WindowProperties.MConfined)
+        self.win.requestProperties(props)
 
-        # world.xxx -- panda automatically detects which world file to load
+        # disable default mouse controls
+        base.disableMouse()
+
+        # world.xxx -- panda automatically detects which world file to load-------------------------------------------------------------
         # loader is used to load different types of non animated models
         # load the environemnt (doesn't show anything if not attached to scene)
         self.environment = self.loader.loadModel("World/world")
         # attach to scene (make it a child of NodePath)
         self.environment.reparentTo(self.render)
 
-        # Actor is used for animated models 
+        # Actor is used for animated models ------------------------------------------------------------------------------------------
         # panda automatically detects player file type
-        self.tempActor = Actor("Entities/Player/player", {"walk" : "Entities/Player/player_walk"})
-        self.tempActor.reparentTo(self.render)
-
-        # camera default is (0,0,0), won't show actor
-        self.tempActor.setPos(0, 7, 0)
+        self.DoomDude = Actor("Entities/Player/player", {"walk" : "Entities/player/player_walk"})
+        self.DoomDude.reparentTo(self.render)
 
         # animate actor
-        self.tempActor.loop("walk")
+        # self.DoomDude.loop("walk")
 
-        # create keymap
+        # mouse camera -------------------------------------------------------------------------------------------------------------
+        self.camera = base.camera
+        self.horizontal = 0
+        self.vertical = 0
+        camera.setHpr(self.horizontal, self.vertical, 0)
+        
+        # keymap ------------------------------------------------------------------------------------------------------------------
         self.keyMap = {
             "up" : False,
             "down" : False,
@@ -65,33 +75,68 @@ class GrappleDoom(ShowBase):
         self.accept("mouse1", self.updateKeyMap, ["shoot", True])
         self.accept("mouse1-up", self.updateKeyMap, ["shoot", False])
 
-        # self.update added to task manager 
+        # self.update added to task manager ----------------------------------------------------------------------------
         # self.updateTask :: variable assigned to the task object
         # self.taskMgr.add :: identifies the task 
-        self.updateTask = self.taskMgr.add(self.update, "update")
+        self.updateTask = taskMgr.add(self.update, "update")
 
     def updateKeyMap(self, controlName, controlState):
         self.keyMap[controlName] = controlState
-    
+
+    def updateCamera(self):
+        pass
 
     def update(self, task):
-         # Get the global clock and compute the time since the last frame
+         # Get the global clock and compute the time since the last frame ------------------------------------------------------
         self.clock = ClockObject.getGlobalClock()
-        dt = self.clock.getDt()
+        deltaT = self.clock.getDt()
 
-        # check for player movement
+        # check for player movement----------------------------------------------------------------------------------------------
         if self.keyMap["up"]:
-            self.tempActor.setPos(self.tempActor.getPos() + Vec3(0, SPEED*dt, 0))
+            self.DoomDude.setPos(self.DoomDude.getPos() + Vec3(0, self.SPEED*deltaT, 0))
         if self.keyMap["down"]:
-            self.tempActor.setPos(self.tempActor.getPos() + Vec3(0, -SPEED*dt, 0))
+            self.DoomDude.setPos(self.DoomDude.getPos() + Vec3(0, -self.SPEED*deltaT, 0))
         if self.keyMap["left"]:
-            self.tempActor.setPos(self.tempActor.getPos() + Vec3(-SPEED*dt, 0, 0))
+            self.DoomDude.setPos(self.DoomDude.getPos() + Vec3(-self.SPEED*deltaT, 0, 0))
         if self.keyMap["right"]:
-            self.tempActor.setPos(self.tempActor.getPos() + Vec3(SPEED*dt, 0, 0))
+            self.DoomDude.setPos(self.DoomDude.getPos() + Vec3(self.SPEED*deltaT, 0, 0))
         if self.keyMap["shoot"]:
-            print ("Zap!")
+            print ("Shoot!")
 
-        # Tell the task manager to continue running this task
+        # mouse movement --------------------------------------------------------------------------------------------------------
+        if base.mouseWatcherNode.hasMouse():
+            # get mouse data
+            self.deltaX = base.mouseWatcherNode.getMouseX()
+            self.deltaY = base.mouseWatcherNode.getMouseY()
+            # if (self.deltaX > 0.9999 or self.deltaX < -0.9999 or self.deltaY > 0.9999 or self.deltaY < -0.9999):
+            #     d
+
+            # get player data
+            playerPos = self.DoomDude.getPos()
+            playerHpr = self.DoomDude.getHpr()
+            
+            # calculate rotation
+            self.horizontal += self.mouseSens * self.deltaX
+            self.vertical -= self.mouseSens * self.deltaY
+
+            # set camera settings
+            cameraOffset = Vec3(0, 0, 0)
+            cameraPos = playerPos + cameraOffset
+            cameraHpr = self.camera.getHpr()
+            cameraHpr.setX(cameraHpr.getX() - self.deltaX * self.mouseSens)  # Adjust the camera pitch
+            cameraHpr.setY(cameraHpr.getY() + self.deltaY * self.mouseSens)
+            # cameraHpr = Vec3(-self.horizontal, self.vertical, 0)  # Use the player's heading(H) to adjust the camera's direction
+            
+
+            # update camera
+            self.camera.setPos(cameraPos)
+            self.camera.setHpr(cameraHpr)
+      
+        # reset to center
+        base.win.movePointer(0, base.win.getProperties().getXSize()//2, base.win.getProperties().getYSize()//2)
+
+
+        # Tell the task manager to continue running this task --------------------------------------------------------------------
         return task.cont
 
 
