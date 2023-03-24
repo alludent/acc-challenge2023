@@ -1,10 +1,10 @@
 from direct.showbase.ShowBase import ShowBase
 from direct.actor.Actor import Actor
-from panda3d.core import *
-# from panda3d.core import WindowProperties
-# from panda3d.core import ClockObject
-# from panda3d.core import Vec3
-# from direct.task.TaskManager import TaskManager
+from math import sin, cos, pi
+from panda3d.core import WindowProperties
+from panda3d.core import ClockObject
+from panda3d.core import Vec3
+# from panda3d.core import *
 
 
 # showbase is a base class for the game window
@@ -35,14 +35,14 @@ class GrappleDoom(ShowBase):
         # world.xxx -- panda automatically detects which world file to load-------------------------------------------------------------
         # loader is used to load different types of non animated models
         # load the environemnt (doesn't show anything if not attached to scene)
-        self.environment = self.loader.loadModel("World/world")
+        self.environment = base.loader.loadModel("World/world")
         # attach to scene (make it a child of NodePath)
-        self.environment.reparentTo(self.render)
+        self.environment.reparentTo(base.render)
 
         # Actor is used for animated models ------------------------------------------------------------------------------------------
         # panda automatically detects player file type
         self.DoomDude = Actor("Entities/Player/player", {"walk" : "Entities/player/player_walk"})
-        self.DoomDude.reparentTo(self.render)
+        self.DoomDude.reparentTo(base.render)
 
         # animate actor
         # self.DoomDude.loop("walk")
@@ -51,7 +51,15 @@ class GrappleDoom(ShowBase):
         self.camera = base.camera
         self.horizontal = 0
         self.vertical = 0
-        camera.setHpr(self.horizontal, self.vertical, 0)
+        self.camera.setHpr(self.horizontal, self.vertical, 0)
+        self.cameraHpr = self.camera.getHpr()
+
+        # create cam node to attach to player movement
+        # self.cameraNode = NodePath("cameraNode")
+        # self.cameraNode.reparentTo(base.render)
+        # self.camera.reparentTo(cameraNode)
+
+
         
         # keymap ------------------------------------------------------------------------------------------------------------------
         self.keyMap = {
@@ -80,30 +88,47 @@ class GrappleDoom(ShowBase):
         # self.taskMgr.add :: identifies the task 
         self.updateTask = taskMgr.add(self.update, "update")
 
-    def updateKeyMap(self, controlName, controlState):
-        self.keyMap[controlName] = controlState
 
-    def updateCamera(self):
-        pass
 
     def update(self, task):
          # Get the global clock and compute the time since the last frame ------------------------------------------------------
         self.clock = ClockObject.getGlobalClock()
         self.deltaT = self.clock.getDt()
 
-        # check for player movement----------------------------------------------------------------------------------------------
-        if self.keyMap["up"]:
-            self.DoomDude.setPos(self.DoomDude.getPos() + Vec3(0, self.SPEED*self.deltaT, 0))
-        if self.keyMap["down"]:
-            self.DoomDude.setPos(self.DoomDude.getPos() + Vec3(0, -self.SPEED*self.deltaT, 0))
-        if self.keyMap["left"]:
-            self.DoomDude.setPos(self.DoomDude.getPos() + Vec3(-self.SPEED*self.deltaT, 0, 0))
-        if self.keyMap["right"]:
-            self.DoomDude.setPos(self.DoomDude.getPos() + Vec3(self.SPEED*self.deltaT, 0, 0))
+        # camera mouse movement --------------------------------------------------------------------------------------------------------
+        self.updateCamera()
+
+        # player movement----------------------------------------------------------------------------------------------
+        self.updatePlayer(self.deltaT)
+
         if self.keyMap["shoot"]:
             print ("Shoot!")
 
-        # mouse movement --------------------------------------------------------------------------------------------------------
+        # Tell the task manager to continue running this task --------------------------------------------------------------------
+        return task.cont
+
+    def updateKeyMap(self, controlName, controlState):
+        self.keyMap[controlName] = controlState
+
+    def updatePlayer(self, deltaT):
+        # get input direction from key map
+        inputDir = Vec3(self.keyMap["right"] - self.keyMap["left"], 0, self.keyMap["up"] - self.keyMap["down"]).normalized()
+
+        # calculate camera heading in radians 
+        # heading is the left and right movement (Panda3D Hpr sphere illustration)
+        camHeading = self.cameraHpr.getX() * pi / 180.0
+
+        # calculate the direction based on the camera's rotation
+        forwardDir = Vec3(-sin(camHeading), cos(camHeading), 0)
+        sideDir = Vec3(cos(camHeading), sin(camHeading), 0)
+
+        # calculate the move direction based on input direction and camera direction
+        moveDir = forwardDir * inputDir.z + sideDir * inputDir.x
+
+        # update player position
+        self.DoomDude.setPos(self.DoomDude.getPos() + moveDir * self.SPEED * self.deltaT)
+
+    def updateCamera(self):
         if base.mouseWatcherNode.hasMouse():
             # get mouse data
             self.deltaX = base.mouseWatcherNode.getMouseX()
@@ -116,22 +141,17 @@ class GrappleDoom(ShowBase):
             # set camera settings
             cameraOffset = Vec3(0, 0, 0)
             cameraPos = playerPos + cameraOffset
-            cameraHpr = self.camera.getHpr()
 
             # calculate camera movement
-            cameraHpr.setX(cameraHpr.getX() - self.deltaX * self.mouseSens)
-            cameraHpr.setY(cameraHpr.getY() + self.deltaY * self.mouseSens)
+            self.cameraHpr.setX(self.cameraHpr.getX() - self.deltaX * self.mouseSens)
+            self.cameraHpr.setY(self.cameraHpr.getY() + self.deltaY * self.mouseSens)
             
             # update camera
             self.camera.setPos(cameraPos)
-            self.camera.setHpr(cameraHpr)
+            self.camera.setHpr(self.cameraHpr)
       
         # reset to center
         base.win.movePointer(0, base.win.getProperties().getXSize()//2, base.win.getProperties().getYSize()//2)
-
-
-        # Tell the task manager to continue running this task --------------------------------------------------------------------
-        return task.cont
 
 
 game = GrappleDoom()
