@@ -20,14 +20,14 @@ class GrappleDoom(ShowBase):
         self.mouseSens = 15.0
 
         # modify window dimensions; default is 800 640----------------------------------------------------------------------------
-        # properties = WindowProperties()
-        # properties.setSize(800, 640)
-        # self.win.requestProperties(properties)
-        props = WindowProperties()
-        props.setCursorHidden(False)
+        properties = WindowProperties()
+        properties.setSize(800, 640)
+        self.win.requestProperties(properties)
+        properties.setCursorHidden(False)
+
         # confined mouse can't leave window
-        props.setMouseMode(WindowProperties.MConfined)
-        self.win.requestProperties(props)
+        properties.setMouseMode(WindowProperties.MConfined)
+        self.win.requestProperties(properties)
 
         # disable default mouse controls
         base.disableMouse()
@@ -89,17 +89,17 @@ class GrappleDoom(ShowBase):
     def update(self, task):
          # Get the global clock and compute the time since the last frame ------------------------------------------------------
         self.clock = ClockObject.getGlobalClock()
-        deltaT = self.clock.getDt()
+        self.deltaT = self.clock.getDt()
 
         # check for player movement----------------------------------------------------------------------------------------------
         if self.keyMap["up"]:
-            self.DoomDude.setPos(self.DoomDude.getPos() + Vec3(0, self.SPEED*deltaT, 0))
+            self.DoomDude.setPos(self.DoomDude.getPos() + Vec3(0, self.SPEED*self.deltaT, 0))
         if self.keyMap["down"]:
-            self.DoomDude.setPos(self.DoomDude.getPos() + Vec3(0, -self.SPEED*deltaT, 0))
+            self.DoomDude.setPos(self.DoomDude.getPos() + Vec3(0, -self.SPEED*self.deltaT, 0))
         if self.keyMap["left"]:
-            self.DoomDude.setPos(self.DoomDude.getPos() + Vec3(-self.SPEED*deltaT, 0, 0))
+            self.DoomDude.setPos(self.DoomDude.getPos() + Vec3(-self.SPEED*self.deltaT, 0, 0))
         if self.keyMap["right"]:
-            self.DoomDude.setPos(self.DoomDude.getPos() + Vec3(self.SPEED*deltaT, 0, 0))
+            self.DoomDude.setPos(self.DoomDude.getPos() + Vec3(self.SPEED*self.deltaT, 0, 0))
         if self.keyMap["shoot"]:
             print ("Shoot!")
 
