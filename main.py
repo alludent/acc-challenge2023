@@ -159,36 +159,7 @@ class GrappleDoom(ShowBase):
 
         # update player position
         self.player.setPos(self.player.getPos() + moveDir * self.SPEED * deltaT)
-
-    def loadGunTex(self, gunType):
-        # name the file to match gun type
-        self.gunTex = base.loader.loadTexture("Entities/Player/WeaponTex/" + self.currGunType + ".png")
-
-        if gunType == "pistol":
-            pass
-
-        elif gunType == "shotgun":
-            # create a card to display the gun image
-            # aspect2d is used to position textures on the 2d screen space
-            # create a card and attaches it to aspect2d node 
-            gun = base.aspect2d.attachNewNode(CardMaker("gun").generate())
-
-            # changes texture of that node
-            gun.setTexture(self.gunTex)
-
-            # transparent background for the texture
-            gun.setTransparency(True)
-
-            # scale the card
-            gun.setScale(self.aspectRatio)  
-
-            # Set the position of the gun card to the bottom right corner of the screen
-            y = -1 + 0.1 / self.aspectRatio 
-            gun.setPos(0, y, -1)
-
-        elif gunType == "rifle":
-            pass
-
+        
     def updateBullets(self, deltaT, gunType):
             
         velocity = Vec3(0, 0, 0)
@@ -223,6 +194,35 @@ class GrappleDoom(ShowBase):
            self.bullet_node.getPos().getY() < -50 or self.bullet_node.getPos().getY() > 50 or \
            self.bullet_node.getPos().getZ() < -50 or self.bullet_node.getPos().getZ() > 50:
             self.bullet_node.removeNode()
+
+    def loadGunTex(self, gunType):
+        # name the file to match gun type
+        self.gunTex = base.loader.loadTexture("Entities/Player/WeaponTex/" + self.currGunType + ".png")
+
+        if gunType == "pistol":
+            pass
+
+        elif gunType == "shotgun":
+            # create a card to display the gun image
+            # aspect2d is used to position textures on the 2d screen space
+            # create a card and attaches it to aspect2d node 
+            gun = base.aspect2d.attachNewNode(CardMaker("gun").generate())
+
+            # changes texture of that node
+            gun.setTexture(self.gunTex)
+
+            # transparent background for the texture
+            gun.setTransparency(True)
+
+            # scale the card
+            gun.setScale(self.aspectRatio)  
+
+            # Set the position of the gun card to the bottom right corner of the screen
+            y = -1 + 0.1 / self.aspectRatio 
+            gun.setPos(0, y, -1)
+
+        elif gunType == "rifle":
+            pass
 
             
 
