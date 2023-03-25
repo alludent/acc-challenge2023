@@ -176,20 +176,20 @@ class GrappleDoom(ShowBase):
             bulletSpread = 0.3
             bulletInterval = 0.5
 
-        # Get the camera's heading and pitch angles
+        # get direction components
         heading = self.cameraHpr.getX() * pi / 180.0
         pitch = self.cameraHpr.getY() * pi / 180.0
         
-        # Calculate the direction vector of the bullet
+        # calculate direction
         direction = Vec3(-sin(heading)*cos(pitch), cos(heading)*cos(pitch), -sin(pitch))
         
-        # Set the velocity of the bullet in the direction vector
+        # calculate velocity
         velocity += direction * deltaT * 100.0
         
-        # Move the bullet by its velocity
+        # update bullet
         self.bullet_node.setPos(self.bullet_node.getPos() + velocity * deltaT)
         
-        # Remove the bullet if it goes out of bounds
+        # bullet out of bounds
         if self.bullet_node.getPos().getX() < -50 or self.bullet_node.getPos().getX() > 50 or \
            self.bullet_node.getPos().getY() < -50 or self.bullet_node.getPos().getY() > 50 or \
            self.bullet_node.getPos().getZ() < -50 or self.bullet_node.getPos().getZ() > 50:
@@ -217,7 +217,7 @@ class GrappleDoom(ShowBase):
             # scale the card
             gun.setScale(self.aspectRatio)  
 
-            # Set the position of the gun card to the bottom right corner of the screen
+            # position the image
             y = -1 + 0.1 / self.aspectRatio 
             gun.setPos(0, y, -1)
 
