@@ -159,7 +159,7 @@ class GrappleDoom(ShowBase):
             self.camera.setHpr(self.cameraHpr)
 
     def updatePlayer(self, deltaT):
-        # player movement---------------------------------------------------------------------------------------------------------
+        # player movement--------------------------------------------------------------------------------------------------------
         # get input direction from key map
         inputDir = Vec3(self.keyMap["right"] - self.keyMap["left"], 0, self.keyMap["up"] - self.keyMap["down"]).normalized()
 
