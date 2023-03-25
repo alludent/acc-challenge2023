@@ -1,8 +1,11 @@
 from direct.showbase.ShowBase import ShowBase
 from direct.actor.Actor import Actor
 from math import sin, cos, pi
+
+
+from panda3d.core import NodePath
+from panda3d.core import CardMaker
 from panda3d.core import WindowProperties
-from panda3d.core import ClockObject
 from panda3d.core import Vec3
 
 # from panda3d.core import *
@@ -13,33 +16,24 @@ from panda3d.core import Vec3
 # eg scene management, input handling 
 class GrappleDoom(ShowBase):
     def __init__(self):
-        # subclass initialized 
+        # init subclass of ShowBase
         super().__init__()
 
-        # player settings
+        # player settings----------------------------------------------------------------------------------------------------------------
         self.SPEED = 5.0
         self.mouseSens = 15.0
         self.cameraOffset = Vec3(0, 0, 0)
+        self.gunTypes = ["pistol", "shotgun", "rifle"]
+        self.currGunType = self.gunTypes[1]
 
-        # modify window dimensions; default is 800 640----------------------------------------------------------------------------
-        self.properties = WindowProperties()
-        self.properties.setSize(800, 640)
-        self.win.requestProperties(self.properties)
-        self.properties.setCursorHidden(False)
-
-        # confined mouse can't leave window
-        self.properties.setMouseMode(WindowProperties.MConfined)
-        self.win.requestProperties(self.properties)
-
-        # disable default mouse controls
-        base.disableMouse()
+        # modify window dimensions; default is 800 640------------------------------------------------------------------------------------------
+        self.init_windowProperties()
 
         # world.xxx -- panda automatically detects which world file to load-------------------------------------------------------------
         # loader is used to load different types of non animated models
         # load the environemnt (doesn't show anything if not attached to scene)
-        self.environment = base.loader.loadModel("World/world")
-        # attach to scene (make it a child of NodePath)
-        self.environment.reparentTo(base.render)
+        self.world = base.loader.loadModel("World/world")
+        self.world.reparentTo(base.render)
 
         # Actor is used for animated models ------------------------------------------------------------------------------------------
         # panda automatically detects player file type
@@ -49,11 +43,17 @@ class GrappleDoom(ShowBase):
         # animate actor
         # self.player.loop("walk")
 
+        # load the gun tex -----------------------------------------------------------------------------------------------------------------
+        self.aspectRatio = self.getAspectRatio()
+        self.loadGunTex(self.currGunType)
+
+        self.bullet_node = NodePath("bullet")
+        self.bullet_model = base.loader.loadModel("Entities/Player/WeaponTex/bullet.bam")
+        self.bullet_model.reparentTo(self.bullet_node)
+        self.bullet_node.reparentTo(base.render)
+
         # mouse camera -------------------------------------------------------------------------------------------------------------
         self.camera = base.camera
-        self.horizontal = 0
-        self.vertical = 0
-        self.camera.setHpr(self.horizontal, self.vertical, 0)
         self.cameraHpr = self.camera.getHpr()
 
         # keymap ------------------------------------------------------------------------------------------------------------------
@@ -67,20 +67,33 @@ class GrappleDoom(ShowBase):
 
     def update(self, task):
          # Get the global clock and compute the time since the last frame ------------------------------------------------------
-        clock = ClockObject.getGlobalClock()
-        deltaT = clock.getDt()
+        deltaT = globalClock.getDt()
 
         # camera mouse movement --------------------------------------------------------------------------------------------------------
         self.updateCamera()
 
         # player movement-------------------------------------------------------------------------------------------------------------
         self.updatePlayer(deltaT)
-
+        
+        # guntypes = [pistol, shotgun]
         if self.keyMap["shoot"]:
-            print ("Shoot!")
+            self.updateBullets(deltaT, self.currGunType)
 
         # continue the task -----------------------------------------------------------------------------------------------------------------
         return task.cont
+
+    def init_windowProperties(self):
+        self.properties = WindowProperties()
+        self.properties.setSize(800, 640)
+        self.win.requestProperties(self.properties)
+        self.properties.setCursorHidden(False)
+
+        # confined mouse can't leave window
+        self.properties.setMouseMode(WindowProperties.MConfined)
+        self.win.requestProperties(self.properties)
+
+        # disable default mouse controls
+        base.disableMouse()
 
     def init_keyMap(self):
         self.keyMap = {
@@ -135,11 +148,11 @@ class GrappleDoom(ShowBase):
 
         # calculate camera heading in radians 
         # heading is the left and right movement (Panda3D Hpr sphere illustration)
-        camHeading = self.cameraHpr.getX() * pi / 180.0
+        self.camHeading = self.cameraHpr.getX() * pi / 180.0
 
         # calculate the direction based on the camera's rotation
-        forwardDir = Vec3(-sin(camHeading), cos(camHeading), 0)
-        sideDir = Vec3(cos(camHeading), sin(camHeading), 0)
+        forwardDir = Vec3(-sin(self.camHeading), cos(self.camHeading), 0)
+        sideDir = Vec3(cos(self.camHeading), sin(self.camHeading), 0)
 
         # calculate the move direction based on input direction and camera direction
         moveDir = forwardDir * inputDir.z + sideDir * inputDir.x
@@ -147,11 +160,71 @@ class GrappleDoom(ShowBase):
         # update player position
         self.player.setPos(self.player.getPos() + moveDir * self.SPEED * deltaT)
 
-      
-    def UIevent(self):
-        pass
+    def loadGunTex(self, gunType):
+        # name the file to match gun type
+        self.gunTex = base.loader.loadTexture("Entities/Player/WeaponTex/" + self.currGunType + ".png")
 
+        if gunType == "pistol":
+            pass
 
+        elif gunType == "shotgun":
+            # create a card to display the gun image
+            # aspect2d is used to position textures on the 2d screen space
+            # create a card and attaches it to aspect2d node 
+            gun = base.aspect2d.attachNewNode(CardMaker("gun").generate())
+
+            # changes texture of that node
+            gun.setTexture(self.gunTex)
+
+            # transparent background for the texture
+            gun.setTransparency(True)
+
+            # scale the card
+            gun.setScale(self.aspectRatio)  
+
+            # Set the position of the gun card to the bottom right corner of the screen
+            y = -1 + 0.1 / self.aspectRatio 
+            gun.setPos(0, y, -1)
+
+        elif gunType == "rifle":
+            pass
+
+    def updateBullets(self, deltaT, gunType):
+            
+        velocity = Vec3(0, 0, 0)
+        if gunType == "pistol":
+            bulletCount = 1
+            bulletSpread = 0
+            bulletInterval = 0.3
+        elif gunType == "shotgun":
+            bulletCount = 5
+            bulletSpread = 1.3
+            bulletInterval = 1
+        elif gunType == "rifle":
+            bulletCount = 1
+            bulletSpread = 0.3
+            bulletInterval = 0.5
+
+        # Get the camera's heading and pitch angles
+        heading = self.cameraHpr.getX() * pi / 180.0
+        pitch = self.cameraHpr.getY() * pi / 180.0
+        
+        # Calculate the direction vector of the bullet
+        direction = Vec3(-sin(heading)*cos(pitch), cos(heading)*cos(pitch), -sin(pitch))
+        
+        # Set the velocity of the bullet in the direction vector
+        velocity += direction * deltaT * 100.0
+        
+        # Move the bullet by its velocity
+        self.bullet_node.setPos(self.bullet_node.getPos() + velocity * deltaT)
+        
+        # Remove the bullet if it goes out of bounds
+        if self.bullet_node.getPos().getX() < -50 or self.bullet_node.getPos().getX() > 50 or \
+           self.bullet_node.getPos().getY() < -50 or self.bullet_node.getPos().getY() > 50 or \
+           self.bullet_node.getPos().getZ() < -50 or self.bullet_node.getPos().getZ() > 50:
+            self.bullet_node.removeNode()
+
+            
 
 game = GrappleDoom()
 game.run()
