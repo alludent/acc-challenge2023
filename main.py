@@ -29,10 +29,10 @@ class GrappleDoom(ShowBase):
         # modify window dimensions; default is 800 640------------------------------------------------------------------------------------------
         self.init_windowProperties()
 
-        # world.xxx -- panda automatically detects which world file to load-------------------------------------------------------------
+        # the world -------------------------------------------------------------
         # loader is used to load different types of non animated models
         # load the environemnt (doesn't show anything if not attached to scene)
-        self.world = base.loader.loadModel("World/world")
+        self.world = base.loader.loadModel("World/scene.bam")
         self.world.reparentTo(base.render)
 
         # Actor is used for animated models ------------------------------------------------------------------------------------------
@@ -43,7 +43,7 @@ class GrappleDoom(ShowBase):
         # animate actor
         # self.player.loop("walk")
 
-        # load the gun tex -----------------------------------------------------------------------------------------------------------------
+        # load the gun -----------------------------------------------------------------------------------------------------------------
         self.aspectRatio = self.getAspectRatio()
         self.loadGunTex(self.currGunType)
 
@@ -78,6 +78,12 @@ class GrappleDoom(ShowBase):
         # guntypes = [pistol, shotgun]
         if self.keyMap["shoot"]:
             self.updateBullets(deltaT, self.currGunType)
+        if self.keyMap["grapple"]:
+            pass
+        if self.keyMap["ascend"]:
+            self.player.setPos(self.player.getPos() + Vec3(0, 0, 0.1))
+        if self.keyMap["descend"]:
+            self.player.setPos(self.player.getPos() + Vec3(0, 0, -0.1))
 
         # continue the task -----------------------------------------------------------------------------------------------------------------
         return task.cont
@@ -102,7 +108,9 @@ class GrappleDoom(ShowBase):
             "left" : False,
             "right" : False,
             "shoot" : False,
-            "grapple" : False
+            "grapple" : False,
+            "ascend" : False,
+            "descend" : False
         }
 
         # listen to key input 
@@ -114,8 +122,17 @@ class GrappleDoom(ShowBase):
         self.accept("a-up", self.updateKeyMap, ["left", False])
         self.accept("d", self.updateKeyMap, ["right", True])
         self.accept("d-up", self.updateKeyMap, ["right", False])
+
         self.accept("mouse1", self.updateKeyMap, ["shoot", True])
         self.accept("mouse1-up", self.updateKeyMap, ["shoot", False])
+        self.accept("mouse2", self.updateKeyMap, ["grapple", True])
+        self.accept("mouse2-up", self.updateKeyMap, ["grapple", False])
+
+        # godmode
+        self.accept("z", self.updateKeyMap, ["ascend", True])
+        self.accept("z-up", self.updateKeyMap, ["ascend", False])
+        self.accept("x", self.updateKeyMap, ["descend", True])
+        self.accept("x-up", self.updateKeyMap, ["descend", False])
 
     def updateKeyMap(self, controlName, controlState):
         self.keyMap[controlName] = controlState
@@ -228,4 +245,3 @@ class GrappleDoom(ShowBase):
 
 game = GrappleDoom()
 game.run()
-
