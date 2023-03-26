@@ -23,6 +23,8 @@ mouse.traverse_target = shootables_parent
 def update():
     if held_keys['left mouse']:
         shoot()
+    if held_keys['right mouse']:
+        grapple()
 
 def shoot():
     if not gun.on_cooldown:
@@ -36,6 +38,36 @@ def shoot():
         if mouse.hovered_entity and hasattr(mouse.hovered_entity, 'hp'):
             mouse.hovered_entity.hp -= 10
             mouse.hovered_entity.blink(color.red)
+            
+def grapple():
+    if not grappleGun.on_cooldown:
+        grappleGun.on_cooldown = True
+        grappleGun.flash.enabled = True
+        
+        # calc direction
+        direction = mouse.position - grappleGun.flash.world_position
+        direction = direction.normalized()
+        
+        max_distance = 100
+        
+        # detect the point of impact
+        hit_info = raycast(grappleGun.flash.world_position, direction, max_distance, ignore=[player])
+        print(hit_info.entity)
+        
+        if hit_info.hit:
+            # create line from the player to point of impact
+            grapple_line = Entity(model='quad', texture='white_cube', scale=(0.1, hit_info.distance, 0.1), position=player.position, rotation=(0, 0, -player.rotation_y), color=color.green)
+            grapple_line.animate_scale((0.1, 0.1, 0.1), duration=0.2, curve=curve.in_expo)
+            grapple_line.animate_position(hit_info.world_point, duration=0.2, curve=curve.in_expo)
+
+            invoke(grappleGun.flash.disable, delay=.05)
+            invoke(setattr, grappleGun, 'on_cooldown', False, delay=.15)
+
+            destroy(grapple_line, delay=3.0)
+        else:
+            # if the grapple didn't hit anything
+            invoke(grappleGun.flash.disable, delay=.05)
+            invoke(setattr, grappleGun, 'on_cooldown', False, delay=.15)
 
 from ursina.prefabs.health_bar import HealthBar
 
