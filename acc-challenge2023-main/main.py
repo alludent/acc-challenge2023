@@ -17,6 +17,9 @@ player.collider = BoxCollider(player, Vec3(0,1,0), Vec3(1,2,1))
 gun = Entity(model='cube', parent=camera, position=(.5,-.25,.25), scale=(.3,.2,1), origin_z=-.5, color=color.red, on_cooldown=False)
 gun.muzzle_flash = Entity(parent=gun, z=1, world_scale=.5, model='quad', color=color.yellow, enabled=False)
 
+grappleGun = Entity(model='cube', parent=camera, position=(-.5,-.25,.25), scale=(.3,.2,1), origin_z=-.5, color=color.green, on_cooldown=False)
+grappleGun.flash = Entity(parent=grappleGun, z=1, world_scale=.5, model='quad', color=color.blue, enabled=False)
+
 shootables_parent = Entity()
 mouse.traverse_target = shootables_parent
 
