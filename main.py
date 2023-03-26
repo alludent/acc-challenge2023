@@ -19,7 +19,7 @@ class FirstPersonController(Entity):
         mouse.locked = True
         self.mouse_sensitivity = Vec2(40, 40)
 
-        self.gravity = 1
+        self.gravity = 0.3
         self.grounded = False
         self.jump_height = 2
         self.jump_up_duration = .5
@@ -138,19 +138,53 @@ mouse.traverse_target = shootables_parent
 
 for i in range(16):
     Entity(model='cube', origin_y=-.5, scale=2, texture='brick', texture_scale=(1,2),
-        x=random.uniform(-8,8),
-        z=random.uniform(-8,8) + 8,
+        x=random.uniform(-20,20),
+        z=random.uniform(-8,8) + 18,
         collider='box',
-        scale_y = random.uniform(2,3),
+        scale_y = random.uniform(15,25),
         color=color.hsv(0, 0, random.uniform(.9, 1))
     )
 
 
-def update():
+def update():    
     if held_keys['left mouse']:
         shoot()
+        
     if held_keys['right mouse']:
         grapple()
+
+
+def grapple():
+    
+    if not grappleGun.on_cooldown:
+        grappleGun.on_cooldown = True
+        grappleGun.flash.enabled = True
+        
+        direction = camera.forward
+        maxGrappleDistance = 50
+        
+        # detect the point of impact
+        hit_info = raycast(grappleGun.flash.world_position, direction, maxGrappleDistance, ignore=[player])
+        
+        if hit_info.hit:
+            # create line from the player to point of impact
+            grappleLine = Entity(model='quad', texture='white_cube', scale=(hit_info.distance, 0.1, 0.1), position=camera.forward+Vec3(0,0,10), rotation = (player.rotation_x, player.rotation_y, 0), color=color.green)
+
+            grappleLine.animate_scale((0.1, 0.1, 0.1), duration=0.2, curve=curve.in_expo)
+            grappleLine.animate_position(hit_info.world_point, duration=0.2, curve=curve.in_expo)
+
+            pull_dir = hit_info.world_point - player.position
+            pull_factor = .5
+            player.animate_position(player.position + pull_dir * pull_factor, duration=.5)
+
+
+            invoke(grappleGun.flash.disable, delay=.05)
+            invoke(setattr, grappleGun, 'on_cooldown', False, delay=.15)
+        else:
+            # if the grapple didn't hit anything
+            invoke(grappleGun.flash.disable, delay=.05)
+            invoke(setattr, grappleGun, 'on_cooldown', False, delay=.15)
+            
 
 def shoot():
     if not gun.on_cooldown:
@@ -165,35 +199,35 @@ def shoot():
             mouse.hovered_entity.hp -= 1000
             mouse.hovered_entity.blink(color.red)
             
-def grapple():
-    if not grappleGun.on_cooldown:
-        grappleGun.on_cooldown = True
-        grappleGun.flash.enabled = True
+# def grapple():
+#     if not grappleGun.on_cooldown:
+#         grappleGun.on_cooldown = True
+#         grappleGun.flash.enabled = True
         
-        direction = camera.forward
-        max_distance = 50
+#         direction = camera.forward
+#         max_distance = 50
         
-        # detect the point of impact
-        hit_info = raycast(grappleGun.flash.world_position, direction, max_distance, ignore=[player])
+#         # detect the point of impact
+#         hit_info = raycast(grappleGun.flash.world_position, direction, max_distance, ignore=[player])
         
-        if hit_info.hit:
-            # create line from the player to point of impact
-            grapple_line = Entity(model='quad', texture='white_cube', scale=(0.1, hit_info.distance, 0.1), position=player.position, rotation=(0, 0, -player.rotation_y), color=color.green)
-            grapple_line.animate_scale((0.1, 0.1, 0.1), duration=0.2, curve=curve.in_expo)
-            grapple_line.animate_position(hit_info.world_point, duration=0.2, curve=curve.in_expo)
+#         if hit_info.hit:
+#             # create line from the player to point of impact
+#             grappleLine = Entity(model='quad', texture='white_cube', scale=(0.1, hit_info.distance, 0.1), position=player.position, rotation=(0, 0, -player.rotation_y), color=color.green)
+#             grappleLine.animate_scale((0.1, 0.1, 0.1), duration=0.2, curve=curve.in_expo)
+#             grappleLine.animate_position(hit_info.world_point, duration=0.2, curve=curve.in_expo)
 
-            pull = hit_info.world_point - player.position
-            pull_factor = 1
-            player.animate_position(player.position + pull * pull_factor, duration=1)
+#             pull = hit_info.world_point - player.position
+#             pull_factor = 1
+#             player.animate_position(player.position + pull * pull_factor, duration=1)
 
-            invoke(grappleGun.flash.disable, delay=.05)
-            invoke(setattr, grappleGun, 'on_cooldown', False, delay=.15)
+#             invoke(grappleGun.flash.disable, delay=.05)
+#             invoke(setattr, grappleGun, 'on_cooldown', False, delay=.15)
 
-            destroy(grapple_line, delay=3.0)
-        else:
-            # if the grapple didn't hit anything
-            invoke(grappleGun.flash.disable, delay=.05)
-            invoke(setattr, grappleGun, 'on_cooldown', False, delay=.15)
+#             destroy(grappleLine, delay=3.0)
+#         else:
+#             # if the grapple didn't hit anything
+#             invoke(grappleGun.flash.disable, delay=.05)
+#             invoke(setattr, grappleGun, 'on_cooldown', False, delay=.15)
 
 from ursina.prefabs.health_bar import HealthBar
 
