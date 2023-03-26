@@ -1,247 +1,138 @@
-from direct.showbase.ShowBase import ShowBase
 from direct.actor.Actor import Actor
-from math import sin, cos, pi
+from ursina import *
+from ursina.prefabs.first_person_controller import FirstPersonController
+from ursina.shaders import lit_with_shadows_shader
+
+app = Ursina()
+
+random.seed(2023)
+Entity.default_shader = lit_with_shadows_shader
+
+ground = Entity(model='plane', collider='box', scale=64)
+
+editor_camera = EditorCamera(enabled=False, ignore_paused=True)
+player = FirstPersonController(model='cube', z=-10, color=color.orange, origin_y=-.5, speed=8)
+player.collider = BoxCollider(player, Vec3(0,1,0), Vec3(1,2,1))
+player.hp = 100
+player.max_immune_timer = 0.8
+player.immune_timer = 0.8
+healthbar = Panel(scale=2, model='quad')
+healthbar.alpha=0
+gun = Entity(model='cube', parent=camera, position=(.5,-.25,.25), scale=(.3,.2,1), origin_z=-.5, color=color.red, on_cooldown=False)
+gun.muzzle_flash = Entity(parent=gun, z=1, world_scale=.5, model='quad', color=color.yellow, enabled=False)
+
+color.tred = color.rgba(255,0,0,0.4)
+
+shootables_parent = Entity()
+mouse.traverse_target = shootables_parent
+
+def update():
+    player.immune_timer -= time.dt
+    if held_keys['left mouse']:
+        shoot()
+    if player.hp <= 0:
+        on_player_death()
+
+def shoot():
+    if not gun.on_cooldown:
+        # print('shoot')
+        gun.on_cooldown = True
+        gun.muzzle_flash.enabled=True
+        from ursina.prefabs.ursfx import ursfx
+        ursfx([(0.0, 0.0), (0.1, 0.9), (0.15, 0.75), (0.3, 0.14), (0.6, 0.0)], volume=0.5, wave='noise', pitch=random.uniform(-13,-12), pitch_change=-12, speed=3.0)
+        invoke(gun.muzzle_flash.disable, delay=.05)
+        invoke(setattr, gun, 'on_cooldown', False, delay=.15)
+        if mouse.hovered_entity and hasattr(mouse.hovered_entity, 'hp'):
+            mouse.hovered_entity.hp -= 10
+            mouse.hovered_entity.blink(color.red)
+
+from ursina.prefabs.health_bar import HealthBar
+
+class Enemy(Entity):
+    def __init__(self, **kwargs):
+        super().__init__(parent=shootables_parent, model='cube', origin_y=-.5, color=color.light_gray, collider='box', **kwargs)
+        self.setScale(1,2.4,3)
+
+        self.collider = 'box'
+        self.alpha = 0
+        self.actor = Actor("Entities/ODIUS/ODIUS.glb")
+        self.actor.reparent_to(self)
+        self.actor.setPos(0,0.4,0)
+        self.actor.setScale(1/self.scale_x,1/self.scale_y,1/self.scale_z)
+        self.actor.setHpr(180, 0, 0)
+        self.actor.loop("Leap")  # use .play() instead of loop() to play it once.
+
+        self.health_bar = Entity(parent=self, y=1.2, model='cube', color=color.red, world_scale=(1.5,.1,.1))
+        self.max_hp = 100
+        self.hp = self.max_hp
+        self.speed = 2
+    def update(self):
+        dist = distance_xz(player.position, self.position)
+        if dist > 40:
+            return
+        if dist < 2 and player.immune_timer <=0:
+            player.hp -= 30
+            player.immune_timer = player.max_immune_timer
+            healthbar.blink(color.tred)
+        self.health_bar.alpha = max(0, self.health_bar.alpha - time.dt)
 
 
-from panda3d.core import NodePath
-from panda3d.core import CardMaker
-from panda3d.core import WindowProperties
-from panda3d.core import Vec3
+        self.look_at_2d(player.position, 'y')
+        hit_info = raycast(self.world_position + Vec3(0,1,0), self.forward, 30, ignore=(self,))
+        if hit_info.entity == player:
+            if dist > 2:
+                self.position += self.forward * time.dt * self.speed
 
-# from panda3d.core import *
+    @property
+    def hp(self):
+        return self._hp
 
+    @hp.setter
+    def hp(self, value):
+        self._hp = value
+        if value <= 0:
+            destroy(self)
+            return
 
-# showbase is a base class for the game window
-# contains various aspects of game management
-# eg scene management, input handling 
-class GrappleDoom(ShowBase):
-    def __init__(self):
-        # init subclass of ShowBase
-        super().__init__()
+        self.health_bar.world_scale_x = self.hp / self.max_hp * 1.5
+        self.health_bar.alpha = 1
 
-        # player settings----------------------------------------------------------------------------------------------------------------
-        self.SPEED = 5.0
-        self.mouseSens = 15.0
-        self.cameraOffset = Vec3(0, 0, 0)
-        self.gunTypes = ["pistol", "shotgun", "rifle"]
-        self.currGunType = self.gunTypes[1]
+# Enemy()
+enemies = [Enemy(x=x*4) for x in range(4)]
 
-        # modify window dimensions; default is 800 640------------------------------------------------------------------------------------------
-        self.init_windowProperties()
+def on_respawn():
+    print("respawning")
+    death_panel.visible = False
+    death_panel.retry.enabled = False
+    player.hp = 100
 
-        # the world -------------------------------------------------------------
-        # loader is used to load different types of non animated models
-        # load the environemnt (doesn't show anything if not attached to scene)
-        self.world = base.loader.loadModel("World/scene.bam")
-        self.world.reparentTo(base.render)
+death_panel = Panel(scale=2, model='quad')
+death_panel.retry = Button(parent=death_panel, color=color.red, position=(0, 0), text = "Retry")
+death_panel.retry.on_click = on_respawn
+death_panel.visible = False
+death_panel.retry.enabled = False
+def on_player_death():
+    death_panel.retry.enabled = True
+    death_panel.visible = True
+    player.cursor.enabled = True
 
-        # Actor is used for animated models ------------------------------------------------------------------------------------------
-        # panda automatically detects player file type
-        self.player = Actor("Entities/Player/player", {"walk" : "Entities/player/player_walk"})
-        self.player.reparentTo(base.render)
+def pause_input(key):
+    if key == 'tab':    # press tab to toggle edit/play mode
+        editor_camera.enabled = not editor_camera.enabled
 
-        # animate actor
-        # self.player.loop("walk")
+        player.visible_self = editor_camera.enabled
+        player.cursor.enabled = not editor_camera.enabled
+        gun.enabled = not editor_camera.enabled
+        mouse.locked = not editor_camera.enabled
+        editor_camera.position = player.position
 
-        # load the gun -----------------------------------------------------------------------------------------------------------------
-        self.aspectRatio = self.getAspectRatio()
-        self.loadGunTex(self.currGunType)
+        application.paused = editor_camera.enabled
 
-        self.bullet_node = NodePath("bullet")
-        self.bullet_model = base.loader.loadModel("Entities/Player/WeaponTex/bullet.bam")
-        self.bullet_model.reparentTo(self.bullet_node)
-        self.bullet_node.reparentTo(base.render)
-
-        # mouse camera -------------------------------------------------------------------------------------------------------------
-        self.camera = base.camera
-        self.cameraHpr = self.camera.getHpr()
-
-        # keymap ------------------------------------------------------------------------------------------------------------------
-        self.init_keyMap()
-
-        # self.update added to task manager -------------------------------------------------------------------------------------------
-        # self.updateTask :: variable assigned to the task object
-        # self.taskMgr.add :: identifies the task 
-        self.updateTask = taskMgr.add(self.update, "update")
+pause_handler = Entity(ignore_paused=True, input=pause_input)
 
 
-    def update(self, task):
-         # Get the global clock and compute the time since the last frame ------------------------------------------------------
-        deltaT = globalClock.getDt()
+sun = DirectionalLight()
+sun.look_at(Vec3(1,-1,-1))
+Sky()
 
-        # camera mouse movement --------------------------------------------------------------------------------------------------------
-        self.updateCamera()
-
-        # player movement-------------------------------------------------------------------------------------------------------------
-        self.updatePlayer(deltaT)
-        
-        # guntypes = [pistol, shotgun]
-        if self.keyMap["shoot"]:
-            self.updateBullets(deltaT, self.currGunType)
-        if self.keyMap["grapple"]:
-            pass
-        if self.keyMap["ascend"]:
-            self.player.setPos(self.player.getPos() + Vec3(0, 0, 0.1))
-        if self.keyMap["descend"]:
-            self.player.setPos(self.player.getPos() + Vec3(0, 0, -0.1))
-
-        # continue the task -----------------------------------------------------------------------------------------------------------------
-        return task.cont
-
-    def init_windowProperties(self):
-        self.properties = WindowProperties()
-        self.properties.setSize(800, 640)
-        self.win.requestProperties(self.properties)
-        self.properties.setCursorHidden(False)
-
-        # confined mouse can't leave window
-        self.properties.setMouseMode(WindowProperties.MConfined)
-        self.win.requestProperties(self.properties)
-
-        # disable default mouse controls
-        base.disableMouse()
-
-    def init_keyMap(self):
-        self.keyMap = {
-            "up" : False,
-            "down" : False,
-            "left" : False,
-            "right" : False,
-            "shoot" : False,
-            "grapple" : False,
-            "ascend" : False,
-            "descend" : False
-        }
-
-        # listen to key input 
-        self.accept("w", self.updateKeyMap, ["up", True])
-        self.accept("w-up", self.updateKeyMap, ["up", False])
-        self.accept("s", self.updateKeyMap, ["down", True])
-        self.accept("s-up", self.updateKeyMap, ["down", False])
-        self.accept("a", self.updateKeyMap, ["left", True])
-        self.accept("a-up", self.updateKeyMap, ["left", False])
-        self.accept("d", self.updateKeyMap, ["right", True])
-        self.accept("d-up", self.updateKeyMap, ["right", False])
-
-        self.accept("mouse1", self.updateKeyMap, ["shoot", True])
-        self.accept("mouse1-up", self.updateKeyMap, ["shoot", False])
-        self.accept("mouse2", self.updateKeyMap, ["grapple", True])
-        self.accept("mouse2-up", self.updateKeyMap, ["grapple", False])
-
-        # godmode
-        self.accept("z", self.updateKeyMap, ["ascend", True])
-        self.accept("z-up", self.updateKeyMap, ["ascend", False])
-        self.accept("x", self.updateKeyMap, ["descend", True])
-        self.accept("x-up", self.updateKeyMap, ["descend", False])
-
-    def updateKeyMap(self, controlName, controlState):
-        self.keyMap[controlName] = controlState
-
-    def updateCamera(self):
-        # reset to center
-        base.win.movePointer(0, base.win.getProperties().getXSize()//2, base.win.getProperties().getYSize()//2)
-
-        # check if camera is inside the window----------------------------------------------------------------------------------------
-        if base.mouseWatcherNode.hasMouse():
-            # get mouse data
-            deltaX = base.mouseWatcherNode.getMouseX()
-            deltaY = base.mouseWatcherNode.getMouseY()
-            
-            # set camera settings
-            cameraPos = self.player.getPos() + self.cameraOffset
-
-            # calculate camera movement
-            self.cameraHpr.setX(self.cameraHpr.getX() - deltaX * self.mouseSens)
-            self.cameraHpr.setY(self.cameraHpr.getY() + deltaY * self.mouseSens)
-            
-            # update camera
-            self.camera.setPos(cameraPos)
-            self.camera.setHpr(self.cameraHpr)
-
-    def updatePlayer(self, deltaT):
-        # player movement--------------------------------------------------------------------------------------------------------
-        # get input direction from key map
-        inputDir = Vec3(self.keyMap["right"] - self.keyMap["left"], 0, self.keyMap["up"] - self.keyMap["down"]).normalized()
-
-        # calculate camera heading in radians 
-        # heading is the left and right movement (Panda3D Hpr sphere illustration)
-        self.camHeading = self.cameraHpr.getX() * pi / 180.0
-
-        # calculate the direction based on the camera's rotation
-        forwardDir = Vec3(-sin(self.camHeading), cos(self.camHeading), 0)
-        sideDir = Vec3(cos(self.camHeading), sin(self.camHeading), 0)
-
-        # calculate the move direction based on input direction and camera direction
-        moveDir = forwardDir * inputDir.z + sideDir * inputDir.x
-
-        # update player position
-        self.player.setPos(self.player.getPos() + moveDir * self.SPEED * deltaT)
-        
-    def updateBullets(self, deltaT, gunType):
-            
-        velocity = Vec3(0, 0, 0)
-        if gunType == "pistol":
-            bulletCount = 1
-            bulletSpread = 0
-            bulletInterval = 0.3
-        elif gunType == "shotgun":
-            bulletCount = 5
-            bulletSpread = 1.3
-            bulletInterval = 1
-        elif gunType == "rifle":
-            bulletCount = 1
-            bulletSpread = 0.3
-            bulletInterval = 0.5
-
-        # get direction components
-        heading = self.cameraHpr.getX() * pi / 180.0
-        pitch = self.cameraHpr.getY() * pi / 180.0
-        
-        # calculate direction
-        direction = Vec3(-sin(heading)*cos(pitch), cos(heading)*cos(pitch), -sin(pitch))
-        
-        # calculate velocity
-        velocity += direction * deltaT * 100.0
-        
-        # update bullet
-        self.bullet_node.setPos(self.bullet_node.getPos() + velocity * deltaT)
-        
-        # bullet out of bounds
-        if self.bullet_node.getPos().getX() < -50 or self.bullet_node.getPos().getX() > 50 or \
-           self.bullet_node.getPos().getY() < -50 or self.bullet_node.getPos().getY() > 50 or \
-           self.bullet_node.getPos().getZ() < -50 or self.bullet_node.getPos().getZ() > 50:
-            self.bullet_node.removeNode()
-
-    def loadGunTex(self, gunType):
-        # name the file to match gun type
-        self.gunTex = base.loader.loadTexture("Entities/Player/WeaponTex/" + self.currGunType + ".png")
-
-        if gunType == "pistol":
-            pass
-
-        elif gunType == "shotgun":
-            # create a card to display the gun image
-            # aspect2d is used to position textures on the 2d screen space
-            # create a card and attaches it to aspect2d node 
-            gun = base.aspect2d.attachNewNode(CardMaker("gun").generate())
-
-            # changes texture of that node
-            gun.setTexture(self.gunTex)
-
-            # transparent background for the texture
-            gun.setTransparency(True)
-
-            # scale the card
-            gun.setScale(self.aspectRatio)  
-
-            # position the image
-            y = -1 + 0.1 / self.aspectRatio 
-            gun.setPos(0, y, -1)
-
-        elif gunType == "rifle":
-            pass
-
-            
-
-game = GrappleDoom()
-game.run()
+app.run()
