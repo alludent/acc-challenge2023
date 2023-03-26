@@ -1,131 +1,27 @@
 from direct.showbase.ShowBase import ShowBase
-from direct.actor.Actor import Actor
 from ursina import *
-from ursina.prefabs.first_person_controller import FirstPersonController
 from ursina.shaders import lit_with_shadows_shader
+from FirstPersonController import FirstPersonController
+from Enemy import Enemy
 
-
-class FirstPersonController(Entity):
-    def __init__(self, **kwargs):
-        self.cursor = Entity(parent=camera.ui, model='quad', color=color.pink, scale=.008, rotation_z=45)
-        super().__init__()
-        self.speed = 8
-        self.height = 2
-        self.camera_pivot = Entity(parent=self, y=self.height)
-
-        camera.parent = self.camera_pivot
-        camera.position = (0, 0, 0)
-        camera.rotation = (0, 0, 0)
-        camera.fov = 130
-        mouse.locked = True
-        self.mouse_sensitivity = Vec2(40, 40)
-
-        self.gravity = 0.3
-        self.grounded = False
-        self.jump_height = 2
-        self.jump_up_duration = .5
-        self.fall_after = .35  # will interrupt jump up
-        self.jumping = False
-        self.air_time = 0
-
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-        # make sure we don't fall through the ground if we start inside it
-        if self.gravity:
-            ray = raycast(self.world_position + (0, self.height, 0), self.down, ignore=(self,))
-            if ray.hit:
-                self.y = ray.world_point.y
-
-    def update(self):
-        self.rotation_y += mouse.velocity[0] * self.mouse_sensitivity[1]
-
-        self.camera_pivot.rotation_x -= mouse.velocity[1] * self.mouse_sensitivity[0]
-        self.camera_pivot.rotation_x = clamp(self.camera_pivot.rotation_x, -90, 90)
-
-        self.direction = Vec3(
-            self.forward * (held_keys['w'] - held_keys['s'])
-            + self.right * (held_keys['d'] - held_keys['a'])
-        ).normalized()
-
-        feet_ray = raycast(self.position + Vec3(0, 0.5, 0), self.direction, ignore=(self,), distance=.5, debug=False)
-        head_ray = raycast(self.position + Vec3(0, self.height - .1, 0), self.direction, ignore=(self,), distance=.5,
-                           debug=False)
-        if not feet_ray.hit and not head_ray.hit:
-            move_amount = self.direction * time.dt * self.speed
-
-            if raycast(self.position + Vec3(-.0, 1, 0), Vec3(1, 0, 0), distance=.5, ignore=(self,)).hit:
-                move_amount[0] = min(move_amount[0], 0)
-            if raycast(self.position + Vec3(-.0, 1, 0), Vec3(-1, 0, 0), distance=.5, ignore=(self,)).hit:
-                move_amount[0] = max(move_amount[0], 0)
-            if raycast(self.position + Vec3(-.0, 1, 0), Vec3(0, 0, 1), distance=.5, ignore=(self,)).hit:
-                move_amount[2] = min(move_amount[2], 0)
-            if raycast(self.position + Vec3(-.0, 1, 0), Vec3(0, 0, -1), distance=.5, ignore=(self,)).hit:
-                move_amount[2] = max(move_amount[2], 0)
-            self.position += move_amount
-
-            # self.position += self.direction * self.speed * time.dt
-
-        if self.gravity:
-            # gravity
-            ray = raycast(self.world_position + (0, self.height, 0), self.down, ignore=(self,))
-            # ray = boxcast(self.world_position+(0,2,0), self.down, ignore=(self,))
-
-            if ray.distance <= self.height + .1:
-                if not self.grounded:
-                    self.land()
-                self.grounded = True
-                # make sure it's not a wall and that the point is not too far up
-                if ray.world_normal.y > .7 and ray.world_point.y - self.world_y < .5:  # walk up slope
-                    self.y = ray.world_point[1]
-                return
-            else:
-                self.grounded = False
-
-            # if not on ground and not on way up in jump, fall
-            self.y -= min(self.air_time, ray.distance - .05) * time.dt * 100
-            self.air_time += time.dt * .25 * self.gravity
-
-    def input(self, key):
-        if key == 'space':
-            self.jump()
-        if key == 'right mouse':
-            grapple()
-
-    def jump(self):
-        if not self.grounded:
-            return
-
-        self.grounded = False
-        self.animate_y(self.y + self.jump_height, self.jump_up_duration, resolution=int(1 // time.dt),
-                       curve=curve.out_expo)
-        invoke(self.start_fall, delay=self.fall_after)
-
-    def start_fall(self):
-        self.y_animator.pause()
-        self.jumping = False
-
-    def land(self):
-        # print('land')
-        self.air_time = 0
-        self.grounded = True
-
-    def on_enable(self):
-        mouse.locked = True
-        self.cursor.enabled = True
-
-    def on_disable(self):
-        mouse.locked = False
-        self.cursor.enabled = False
-
-
+# Setups
 app = Ursina()
 
 random.seed(2023)
 Entity.default_shader = lit_with_shadows_shader
-
+#Environment
 ground = Entity(model='plane', collider='box', scale=64)
 
+for i in range(16):
+    Entity(model='cube', origin_y=-.5, scale=2, texture='brick', texture_scale=(1, 2),
+           x=random.uniform(-20, 20),
+           z=random.uniform(-8, 8) + 18,
+           collider='box',
+           scale_y=random.uniform(15, 25),
+           color=color.hsv(0, 0, random.uniform(.9, 1))
+           )
+
+#Character set up
 editor_camera = EditorCamera(enabled=False, ignore_paused=True)
 player = FirstPersonController(model='cube', z=-10, color=color.orange, origin_y=-.5, speed=8)
 player.collider = BoxCollider(player, Vec3(0, 1, 0), Vec3(1, 2, 1))
@@ -142,17 +38,7 @@ grappleGun = Entity(model='cube', parent=camera, position=(-.5, -.25, .25), scal
                     color=color.green, on_cooldown=False)
 grappleGun.flash = Entity(parent=grappleGun, z=1, world_scale=.5, model='quad', color=color.blue, enabled=False)
 
-shootables_parent = Entity()
-mouse.traverse_target = shootables_parent
-
-for i in range(16):
-    Entity(model='cube', origin_y=-.5, scale=2, texture='brick', texture_scale=(1, 2),
-           x=random.uniform(-20, 20),
-           z=random.uniform(-8, 8) + 18,
-           collider='box',
-           scale_y=random.uniform(15, 25),
-           color=color.hsv(0, 0, random.uniform(.9, 1))
-           )
+mouse.traverse_target = Enemy.shootables_parent
 
 
 def update():
@@ -217,61 +103,10 @@ def grapple():
             invoke(grappleGun.flash.disable, delay=.05)
             invoke(setattr, grappleGun, 'on_cooldown', False, delay=.15)
 
-
-class Enemy(Entity):
-    def __init__(self, **kwargs):
-        super().__init__(parent=shootables_parent, model='cube', origin_y=-.5, color=color.light_gray, collider='box',
-                         **kwargs)
-        self.setScale(1, 2.4, 3)
-
-        self.collider = 'box'
-        self.alpha = 0
-        self.actor = Actor("Entities/ODIUS/ODIUS.glb")
-        self.actor.reparent_to(self)
-        self.actor.setPos(0, 0.4, 0)
-        self.actor.setScale(1 / self.scale_x, 1 / self.scale_y, 1 / self.scale_z)
-        self.actor.setHpr(180, 0, 0)
-        self.actor.loop("Leap")  # use .play() instead of loop() to play it once.
-
-        self.health_bar = Entity(parent=self, y=1.2, model='cube', color=color.red, world_scale=(1.5, .1, .1))
-        self.max_hp = 100
-        self.hp = self.max_hp
-        self.speed = 2
-
-    def update(self):
-        dist = distance_xz(player.position, self.position)
-        if dist > 40:
-            return
-        if dist < 2 and player.immune_timer <= 0:
-            player.hp -= 30
-            player.immune_timer = player.max_immune_timer
-        #            healthbar.blink(color.tred)
-        self.health_bar.alpha = max(0, self.health_bar.alpha - time.dt)
-
-        self.look_at_2d(player.position, 'y')
-        hit_info = raycast(self.world_position + Vec3(0, 1, 0), self.forward, 30, ignore=(self,))
-        if hit_info.entity == player:
-            if dist > 2:
-                self.position += self.forward * time.dt * self.speed
-
-    @property
-    def hp(self):
-        return self._hp
-
-    @hp.setter
-    def hp(self, value):
-        self._hp = value
-        if value <= 0:
-            destroy(self)
-            return
-
-        self.health_bar.world_scale_x = self.hp / self.max_hp * 1.5
-        self.health_bar.alpha = 1
-
-
 # Enemy()
-enemies = [Enemy(x=x * 4) for x in range(4)]
+enemies = [Enemy(x=x * 4, target= player) for x in range(4)]
 
+#Death stuff
 def on_respawn():
     print("respawning")
     death_panel.visible = False
@@ -288,6 +123,7 @@ def on_player_death():
     death_panel.visible = True
     player.cursor.enabled = True
 
+# Pausing
 def pause_input(key):
     if key == 'tab':  # press tab to toggle edit/play mode
         editor_camera.enabled = not editor_camera.enabled
@@ -303,6 +139,7 @@ def pause_input(key):
 
 pause_handler = Entity(ignore_paused=True, input=pause_input)
 
+# Lighting
 sun = DirectionalLight()
 sun.look_at(Vec3(1, -1, -1))
 Sky()
