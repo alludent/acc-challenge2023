@@ -48,8 +48,7 @@ def grapple():
         grappleGun.flash.enabled = True
         
         # calc direction
-        direction = mouse.position - grappleGun.flash.world_position
-        direction = direction.normalized()
+        direction = camera.forward
         
         max_distance = 100
         
