@@ -149,9 +149,10 @@ for i in range(16):
 def update():    
     if held_keys['left mouse']:
         shoot()
-        
-    if held_keys['right mouse']:
-        grapple()
+    
+def input(key):
+    if key == 'right mouse':
+        grapple();
 
 
 def grapple():
