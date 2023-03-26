@@ -61,6 +61,10 @@ def grapple():
             grapple_line = Entity(model='quad', texture='white_cube', scale=(0.1, hit_info.distance, 0.1), position=player.position, rotation=(0, 0, -player.rotation_y), color=color.green)
             grapple_line.animate_scale((0.1, 0.1, 0.1), duration=0.2, curve=curve.in_expo)
             grapple_line.animate_position(hit_info.world_point, duration=0.2, curve=curve.in_expo)
+            
+            pull = hit_info.world_point - player.position
+            pull_factor = 1 
+            player.animate_position(player.position + pull * pull_factor, duration=0.35)
 
             invoke(grappleGun.flash.disable, delay=.05)
             invoke(setattr, grappleGun, 'on_cooldown', False, delay=.15)
