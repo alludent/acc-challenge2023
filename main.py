@@ -100,8 +100,9 @@ gun = Entity(model='cube', parent=camera, position=(.5, -.25, .25), scale=(.3, .
 gun.muzzle_flash = Entity(parent=gun, z=1, world_scale=.5, model='quad', color=color.yellow, enabled=False)
 
 grappleGun = Entity(model='cube', parent=camera, position=(-.5, -.25, .25), scale=(.3, .2, 1), origin_z=-.5,
-                    color=color.green, on_cooldown=False)
+                    color=color.green, grappling = False)
 grappleGun.flash = Entity(parent=grappleGun, z=1, world_scale=.5, model='quad', color=color.blue, enabled=False)
+
 
 
 # ======================================================= SETUP ======================================================================
@@ -109,15 +110,23 @@ ui = UI()
 worldSetup()
 
 
+
 #   ======================================================= GAME FUNCS ======================================================================
 def update():
     player.immune_timer -= time.dt
-    if held_keys['left mouse']:
-        shoot()
-    if held_keys['right mouse']:
-        grapple()
     if player.hp <= 0:
         ui.on_player_death()
+
+    if held_keys['left mouse']:
+        shoot()
+
+    if held_keys['right mouse']:
+        # grapple()
+        print("grappling")
+        grappleGun.grappling = True
+    elif not held_keys['right mouse'] and grappleGun.grappling:
+        print("released")
+        grappleGun.grappling = False
 
 
 def shoot():
@@ -136,37 +145,26 @@ def shoot():
 
 
 def grapple():
-    if not grappleGun.on_cooldown:
-        grappleGun.on_cooldown = True
-        grappleGun.flash.enabled = True
+    grappleGun.flash.enabled = True
 
-        direction = camera.forward
-        maxGrappleDistance = 50
+    direction = camera.forward
+    maxGrappleDistance = 50
 
-        # detect the point of impact
-        hit_info = raycast(grappleGun.flash.world_position, direction, maxGrappleDistance, ignore=[player])
+    # detect the point of impact
+    hitData = raycast(grappleGun.flash.world_position, direction, maxGrappleDistance, ignore=[player])
 
-        if hit_info.hit:
-            print("Hit")
-            # create line from the player to point of impact
-            grappleLine = Entity(model='quad', texture='white_cube', scale=(hit_info.distance, 0.1, 0.1),
-                                 position=camera.forward + Vec3(0, 0, 10),
-                                 rotation=(player.rotation_x, player.rotation_y, 0), color=color.green)
+    if hitData.hit and held_keys['right mouse']:
+        # in grappling animation
+        print("grappling")
 
-            grappleLine.animate_scale((0.1, 0.1, 0.1), duration=0.2, curve=curve.in_expo)
-            grappleLine.animate_position(hit_info.world_point, duration=0.2, curve=curve.in_expo)
-
-            pull_dir = hit_info.world_point - player.position
-            pull_factor = .5
-            player.animate_position(player.position + pull_dir * pull_factor, duration=.5)
-
-            invoke(grappleGun.flash.disable, delay=.05)
-            invoke(setattr, grappleGun, 'on_cooldown', False, delay=.15)
-        else:
-            # if the grapple didn't hit anything
-            print("Didn't hit")
-            invoke(grappleGun.flash.disable, delay=.05)
-            invoke(setattr, grappleGun, 'on_cooldown', False, delay=.15)
+        pull_dir = hitData.world_point - player.position
+        player.animate_position(player.position + pull_dir, duration=1)
+        print(hitData.world_point, player.position)
+        invoke(grappleGun.flash.disable, delay=.05)
+    else:
+        # if the grapple didn't hit anything
+        print("Didn't hit")
+        invoke(grappleGun.flash.disable, delay=.05)
 
 
 
