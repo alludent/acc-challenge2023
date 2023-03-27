@@ -137,7 +137,8 @@ def update():
 
 
 def grapple():
-    if not grappleGun.grappling:  # only detect point of impact if not already grappling
+    # only detect point of impact if not already grappling
+    if not grappleGun.grappling:  
         grappleGun.flash.enabled = True
 
         direction = camera.forward
@@ -150,9 +151,9 @@ def grapple():
             # start grappling animation
             grappleGun.grappling = True
             print("grappling")
-
-
-    else:  # player is already grappling, update their position towards the point of impact
+            
+    # player is already grappling, update their position towards the point of impact
+    else:  
         # pull Line is the 3d vector towards the hit point  
         pullLine = hitData.world_point - player.position
         # ADD: pullIncr.pull incrememnt is a portion of pull line. 
