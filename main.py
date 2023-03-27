@@ -100,8 +100,7 @@ player = FirstPersonController(model='cube', z=-10, color=color.orange, origin_y
 player.collider = BoxCollider(player, Vec3(0, 1, 0), Vec3(1, 2, 1))
 
 player.hp = 100
-player.max_immune_timer = 0.8
-player.immune_timer = 0.8
+player.immuneTimer = 0.8
 healthbar = Panel(scale=20, model='quad')
 healthbar.alpha = 0
 
@@ -123,7 +122,7 @@ worldSetup()
 
 #   ======================================================= GAME FUNCS ======================================================================
 def update():
-    player.immune_timer -= time.dt
+    player.immuneTimer -= time.dt
     if player.hp <= 0:
         ui.on_player_death()
 
