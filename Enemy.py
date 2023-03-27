@@ -19,19 +19,19 @@ class Enemy(Entity):
         self.actor.setScale(1 / self.scale_x, 1 / self.scale_y, 1 / self.scale_z)
         self.actor.setHpr(180, 0, 0)
         # use .play() instead of loop() to play it once.
-        self.health_bar = Entity(parent=self, y=1.2, model='cube', color=color.red, world_scale=(1.5, .1, .1))
-        self.max_hp = 100
-        self.hp = self.max_hp
+        self.healthBar = Entity(parent=self, y=1.2, model='cube', color=color.red, world_scale=(1.5, .1, .1))
+        self.maxHp = 100
+        self.hp = self.maxHp
         self.speed = 2
         self.actor.setPlayRate(0.15, 'Leap')
         self.actor.play('Leap',fromFrame=3, toFrame=3)
         self.gravity = 0.3
         self.grounded = False
-        self.jump_height = 3
-        self.jump_up_duration = .5
-        self.fall_after = .35  # will interrupt jump up
+        self.jumpHeight = 3
+        self.jumpUpDuration = .5
+        self.fallAfter = .35  # will interrupt jump up
         self.jumping = False
-        self.air_time = 0
+        self.airTime = 0
         invoke(setattr, self, 'leap_on_cooldown', False, delay=5)
 
     def start_fall(self):
@@ -42,9 +42,9 @@ class Enemy(Entity):
             return
 
         self.grounded = False
-        self.animate_y(self.y + self.jump_height, self.jump_up_duration, resolution=int(1 // time.dt),
+        self.animate_y(self.y + self.jumpHeight, self.jumpUpDuration, resolution=int(1 // time.dt),
                        curve=curve.out_expo)
-        invoke(self.start_fall, delay=self.fall_after)
+        invoke(self.start_fall, delay=self.fallAfter)
 
     
     def leap(self):
@@ -53,12 +53,12 @@ class Enemy(Entity):
         #self.jump()
         invoke(self.jump, delay=0.2)
         invoke(setattr, self, 'speed', 6, delay=0.2)
-        invoke(setattr, self, 'speed', 2, delay=0.2+self.jump_up_duration)
+        invoke(setattr, self, 'speed', 2, delay=0.2+self.jumpUpDuration)
         invoke(setattr, self, 'leap_on_cooldown', False, delay=5)
         
     def land(self):
         # print('land')
-        self.air_time = 0
+        self.airTime = 0
         self.grounded = True
 
     def update(self):
@@ -66,11 +66,11 @@ class Enemy(Entity):
         dist = distance_xz(self.target.position, self.position)
         if dist > 40:
             return
-        if dist < 2 and target.immune_timer <= 0:
+        if dist < 2 and target.immuneTimer <= 0:
             target.hp -= 30
-            target.immune_timer = target.max_immune_timer
+            target.immuneTimer = target.maxImmuneTimer
         #            healthbar.blink(color.tred)
-        self.health_bar.alpha = max(0, self.health_bar.alpha - time.dt)
+        self.healthBar.alpha = max(0, self.healthBar.alpha - time.dt)
         if dist <15 and self.leap_on_cooldown ==False:
             self.leap()
         self.look_at_2d(target.position, 'y')
@@ -96,8 +96,8 @@ class Enemy(Entity):
                 self.grounded = False
 
             # if not on ground and not on way up in jump, fall
-            self.y -= min(self.air_time, ray.distance - .05) * time.dt * 100
-            self.air_time += time.dt * .25 * self.gravity
+            self.y -= min(self.airTime, ray.distance - .05) * time.dt * 100
+            self.airTime += time.dt * .25 * self.gravity
 
     @property
     def hp(self):
@@ -110,5 +110,5 @@ class Enemy(Entity):
             destroy(self)
             return
         
-        self.health_bar.world_scale_x = self.hp / self.max_hp * 1.5
-        self.health_bar.alpha = 1
+        self.healthBar.world_scale_x = self.hp / self.maxHp * 1.5
+        self.healthBar.alpha = 1
