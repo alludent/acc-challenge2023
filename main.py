@@ -3,29 +3,83 @@ from ursina import *
 from ursina.shaders import lit_with_shadows_shader
 from FirstPersonController import FirstPersonController
 from Enemy import Enemy
-import time as pytime
 
-# Setups
-app = Ursina()
-stage = 1
-random.seed(2023)
-Entity.default_shader = lit_with_shadows_shader
-#Environment
-ground = Entity(model='plane', collider='box', scale=128)
 
-for i in range(16):
-    Entity(model='cube', origin_y=-.5, scale=2, texture='brick', texture_scale=(1, 2),
-           x=random.uniform(-20, 20),
-           z=random.uniform(-8, 8) + 18,
-           collider='box',
-           scale_y=random.uniform(15, 25),
-           color=color.hsv(0, 0, random.uniform(.9, 1))
-           )
+
+# ======================================================= UI =========================================================================
+class UI:
+    def __init__(self):
+       self.deathSceneSetup()
+        
+
+    def pause_input(key):
+        if key == 'tab':  # press tab to toggle edit/play mode
+            editor_camera.enabled = not editor_camera.enabled
+
+            player.visible_self = editor_camera.enabled
+            player.cursor.enabled = not editor_camera.enabled
+            gun.enabled = not editor_camera.enabled
+            grappleGun.enabled = not editor_camera.enabled
+            mouse.locked = not editor_camera.enabled
+            editor_camera.position = player.position
+
+            application.paused = editor_camera.enabled
+
+
+    def deathSceneSetup(self):
+        self.death_panel = Panel(scale=2, model='quad')
+        self.death_panel.retry = Button(parent=self.death_panel, color=color.red, position=(0, 0), text = "Retry")
+        self.death_panel.retry.on_click = self.on_respawn
+        self.death_panel.visible = False
+        self.death_panel.retry.enabled = False
+
+
+    def on_respawn(self):
+        print("respawning")
+        self.death_panel.visible = False
+        self.death_panel.retry.enabled = False
+        player.hp = 100
+        player.position = Vec3(0, .5, -10)
+        resetEnemies()
+
+
+    def on_player_death(self):
+        print("u died")
+        self.death_panel.retry.enabled = True
+        self.death_panel.visible = True
+        player.cursor.enabled = True
+
+
+# ======================================================= WORLD ======================================================================
+def skySetup():
+    sun = DirectionalLight()
+    sun.look_at(Vec3(1, -1, -1))
+    Sky()
+
+
+def buildingSetup():
+    ground = Entity(model='plane', collider='box', scale=64)
+    for i in range(16):
+        Entity(model='cube', origin_y=-.5, scale=2, texture='brick', texture_scale=(1, 2),
+            x=random.uniform(-20, 20),
+            z=random.uniform(-8, 8) + 18,
+            collider='box',
+            scale_y=random.uniform(15, 25),
+            color=color.hsv(0, 0, random.uniform(.9, 1))
+            )
 
 
 def enemySetup():
+    global enemies
     enemies = [Enemy(x=x * 10, target= player) for x in range(4)]
     mouse.traverse_target = Enemy.shootables_parent
+
+
+def resetEnemies():
+    global enemies
+    for i in enemies:
+        destroy(i)
+    enemies = [Enemy(x=x * 8, target= player) for x in range(4)]
 
 
 def worldSetup():
@@ -41,7 +95,8 @@ app = Ursina()
 
 # ======================================================= PLAYER/CAMERA ======================================================================
 editor_camera = EditorCamera(enabled=False, ignore_paused=True)
-player = FirstPersonController(model='cube', z=-20, color=color.orange, origin_y=-.5, speed=8)
+
+player = FirstPersonController(model='cube', z=-10, color=color.orange, origin_y=-.5, speed=8)
 player.collider = BoxCollider(player, Vec3(0, 1, 0), Vec3(1, 2, 1))
 
 player.hp = 100
@@ -76,16 +131,12 @@ def update():
         shoot()
 
     if held_keys['right mouse']:
-        grapple()
-    if held_keys['escape']:
-        app.destroy()
-        exit()
-    if player.hp <= 0:
-        on_player_death()
-    if player.y<0: #fall out of bounds
-        on_player_death()
-
-from ursina.prefabs.health_bar import HealthBar
+        # grapple()
+        print("grappling")
+        grappleGun.grappling = True
+    elif not held_keys['right mouse'] and grappleGun.grappling:
+        print("released")
+        grappleGun.grappling = False
 
 
 def shoot():
@@ -116,73 +167,15 @@ def grapple():
         # in grappling animation
         print("grappling")
 
-            grappleLine.animate_scale((0.1, 0.1, 0.1), duration=0.2, curve=curve.in_expo)
-            grappleLine.animate_position(hit_info.world_point, duration=0.2, curve=curve.in_expo)
+        pull_dir = hitData.world_point - player.position
+        player.animate_position(player.position + pull_dir, duration=1)
+        print(hitData.world_point, player.position)
+        invoke(grappleGun.flash.disable, delay=.05)
+    else:
+        # if the grapple didn't hit anything
+        print("Didn't hit")
+        invoke(grappleGun.flash.disable, delay=.05)
 
-            pull_dir = hit_info.world_point - player.position
-            pull_factor = .5
-            player.animate_position(player.position + pull_dir * pull_factor, duration=.5)
-
-            invoke(grappleGun.flash.disable, delay=.05)
-            invoke(setattr, grappleGun, 'on_cooldown', False, delay=.15)
-        else:
-            # if the grapple didn't hit anything
-            print("Didn't hit")
-            invoke(grappleGun.flash.disable, delay=.05)
-            invoke(setattr, grappleGun, 'on_cooldown', False, delay=.15)
-
-# Enemy()
-enemies = [Enemy(x=x * 8, target= player) for x in range(4)]
-
-#Death stuff
-def on_respawn():
-    print("respawning")
-    death_panel.visible = False
-    death_panel.retry.enabled = False
-    player.hp = 100
-    player.z = -10
-    player.x = 0
-    player.y = 0.8
-    if stage ==1:
-        global enemies
-        for i in enemies:
-            destroy(i)
-        enemies = [Enemy(x=x * 8, target= player) for x in range(4)]
-    invoke(setattr, gun, 'on_cooldown', False, delay=.1)
-
-death_panel = Panel(scale=2, model='quad')
-death_panel.retry = Button(parent=death_panel, color=color.red, position=(0, 0), text = "Retry")
-death_panel.retry.on_click = on_respawn
-death_panel.visible = False
-death_panel.retry.enabled = False
-def on_player_death():
-    death_panel.retry.enabled = True
-    death_panel.visible = True
-    player.cursor.enabled = True
-    gun.on_cooldown = True
-
-
-
-# Pausing
-def pause_input(key):
-    if key == 'tab':  # press tab to toggle edit/play mode
-        editor_camera.enabled = not editor_camera.enabled
-
-        player.visible_self = editor_camera.enabled
-        player.cursor.enabled = not editor_camera.enabled
-        gun.enabled = not editor_camera.enabled
-        mouse.locked = not editor_camera.enabled
-        editor_camera.position = player.position
-
-        application.paused = editor_camera.enabled
-
-
-pause_handler = Entity(ignore_paused=True, input=pause_input)
-
-# Lighting
-sun = DirectionalLight()
-sun.look_at(Vec3(1, -1, -1))
-Sky()
 
 
 app.run()
