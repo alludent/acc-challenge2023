@@ -8,8 +8,9 @@ class Enemy(Entity):
         super().__init__(parent=Enemy.shootables_parent, model='cube', origin_y=-.5, color=color.light_gray, collider='box',
                          **kwargs)
         self.target = target
+        self.height = 2
         self.setScale(1, 2.4, 3)
-
+        self.leap_on_cooldown = True
         self.collider = 'box'
         self.alpha = 0
         self.actor = Actor("Entities/ODIUS/ODIUS.glb")
@@ -17,12 +18,48 @@ class Enemy(Entity):
         self.actor.setPos(0, 0.4, 0)
         self.actor.setScale(1 / self.scale_x, 1 / self.scale_y, 1 / self.scale_z)
         self.actor.setHpr(180, 0, 0)
-        self.actor.loop("Leap")  # use .play() instead of loop() to play it once.
-
+        # use .play() instead of loop() to play it once.
         self.health_bar = Entity(parent=self, y=1.2, model='cube', color=color.red, world_scale=(1.5, .1, .1))
         self.max_hp = 100
         self.hp = self.max_hp
         self.speed = 2
+        self.actor.setPlayRate(0.15, 'Leap')
+        self.actor.play('Leap',fromFrame=3, toFrame=3)
+        self.gravity = 0.3
+        self.grounded = False
+        self.jump_height = 3
+        self.jump_up_duration = .5
+        self.fall_after = .35  # will interrupt jump up
+        self.jumping = False
+        self.air_time = 0
+        invoke(setattr, self, 'leap_on_cooldown', False, delay=5)
+
+    def start_fall(self):
+        self.y_animator.pause()
+        self.jumping = False
+    def jump(self):
+        if not self.grounded:
+            return
+
+        self.grounded = False
+        self.animate_y(self.y + self.jump_height, self.jump_up_duration, resolution=int(1 // time.dt),
+                       curve=curve.out_expo)
+        invoke(self.start_fall, delay=self.fall_after)
+
+    
+    def leap(self):
+        self.leap_on_cooldown = True
+        self.actor.play('Leap',fromFrame=4, toFrame=6)
+        #self.jump()
+        invoke(self.jump, delay=0.2)
+        invoke(setattr, self, 'speed', 6, delay=0.2)
+        invoke(setattr, self, 'speed', 2, delay=0.2+self.jump_up_duration)
+        invoke(setattr, self, 'leap_on_cooldown', False, delay=5)
+        
+    def land(self):
+        # print('land')
+        self.air_time = 0
+        self.grounded = True
 
     def update(self):
         target = self.target
@@ -34,12 +71,33 @@ class Enemy(Entity):
             target.immune_timer = target.max_immune_timer
         #            healthbar.blink(color.tred)
         self.health_bar.alpha = max(0, self.health_bar.alpha - time.dt)
-
+        if dist <15 and self.leap_on_cooldown ==False:
+            self.leap()
         self.look_at_2d(target.position, 'y')
         hit_info = raycast(self.world_position + Vec3(0, 1, 0), self.forward, 30, ignore=(self,))
-        if hit_info.entity == target:
+        if hit_info.entity == target or self.grounded==False:
             if dist > 2:
                 self.position += self.forward * time.dt * self.speed
+        
+        if self.gravity:
+            # gravity
+            ray = raycast(self.world_position + (0, self.height, 0), self.down, ignore=(self,))
+            # ray = boxcast(self.world_position+(0,2,0), self.down, ignore=(self,))
+
+            if ray.distance <= self.height + .1:
+                if not self.grounded:
+                    self.land()
+                self.grounded = True
+                # make sure it's not a wall and that the point is not too far up
+                if ray.world_normal.y > .7 and ray.world_point.y - self.world_y < .5:  # walk up slope
+                    self.y = ray.world_point[1]
+                return
+            else:
+                self.grounded = False
+
+            # if not on ground and not on way up in jump, fall
+            self.y -= min(self.air_time, ray.distance - .05) * time.dt * 100
+            self.air_time += time.dt * .25 * self.gravity
 
     @property
     def hp(self):
@@ -51,6 +109,6 @@ class Enemy(Entity):
         if value <= 0:
             destroy(self)
             return
-
+        
         self.health_bar.world_scale_x = self.hp / self.max_hp * 1.5
         self.health_bar.alpha = 1
