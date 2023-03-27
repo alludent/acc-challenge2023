@@ -88,7 +88,7 @@ def worldSetup():
 
     skySetup()
     buildingSetup()
-    enemySetup()
+    # enemySetup()
 
 
 app = Ursina()
@@ -130,12 +130,48 @@ def update():
         shoot()
 
     if held_keys['right mouse']:
-        # grapple()
-        print("grappling")
-        grappleGun.grappling = True
+        grapple()
     elif not held_keys['right mouse'] and grappleGun.grappling:
-        print("released")
+        release_grapple()
+
+
+
+def grapple():
+    if not grappleGun.grappling:  # only detect point of impact if not already grappling
+        grappleGun.flash.enabled = True
+
+        direction = camera.forward
+        maxGrappleDistance = 50
+
+        # detect the point of impact
+        hitData = raycast(grappleGun.flash.world_position, direction, maxGrappleDistance, ignore=[player])
+
+        if hitData.hit:
+            # start grappling animation
+            grappleGun.grappling = True
+            print("grappling")
+
+            pullDir = hitData.world_point - player.position
+            pullSpeed = 0.2  # adjust this to control the speed of the pull
+            while grappleGun.grappling and pullDir.length() > 0:
+                player.position += pullDir.normalized() * pullSpeed * time.dt
+                pullDir = hitData.world_point - player.position
+
+    else:  # player is already grappling, update their position towards the point of impact
+        if hitData.hit:
+            pullDir = hitData.world_point - player.position
+            pullSpeed = 0.2  # adjust this to control the speed of the pull
+            while grappleGun.grappling and pullDir.length() > 0:
+                player.position += pullDir.normalized() * pullSpeed * time.dt
+                pullDir = hitData.world_point - player.position
+
+
+def release_grapple():
+    if grappleGun.grappling:
         grappleGun.grappling = False
+        grappleGun.flash.enabled = False
+        print("released")
+
 
 
 def shoot():
@@ -151,29 +187,6 @@ def shoot():
         if mouse.hovered_entity and hasattr(mouse.hovered_entity, 'hp'):
             mouse.hovered_entity.hp -= 100
             mouse.hovered_entity.blink(color.red)
-
-
-def grapple():
-    grappleGun.flash.enabled = True
-
-    direction = camera.forward
-    maxGrappleDistance = 50
-
-    # detect the point of impact
-    hitData = raycast(grappleGun.flash.world_position, direction, maxGrappleDistance, ignore=[player])
-
-    if hitData.hit and held_keys['right mouse']:
-        # in grappling animation
-        print("grappling")
-
-        pull_dir = hitData.world_point - player.position
-        player.animate_position(player.position + pull_dir, duration=1)
-        print(hitData.world_point, player.position)
-        invoke(grappleGun.flash.disable, delay=.05)
-    else:
-        # if the grapple didn't hit anything
-        print("Didn't hit")
-        invoke(grappleGun.flash.disable, delay=.05)
 
 
 
