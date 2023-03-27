@@ -3,61 +3,20 @@ from ursina import *
 from ursina.shaders import lit_with_shadows_shader
 from FirstPersonController import FirstPersonController
 from Enemy import Enemy
+from UI import UI
 
-
-
-# ======================================================= UI =========================================================================
-class UI:
-    def __init__(self):
-       self.deathSceneSetup()
-        
-
-    def pause_input(key):
-        if key == 'tab':  # press tab to toggle edit/play mode
-            editor_camera.enabled = not editor_camera.enabled
-
-            player.visible_self = editor_camera.enabled
-            player.cursor.enabled = not editor_camera.enabled
-            gun.enabled = not editor_camera.enabled
-            grappleGun.enabled = not editor_camera.enabled
-            mouse.locked = not editor_camera.enabled
-            editor_camera.position = player.position
-
-            application.paused = editor_camera.enabled
-
-
-    def deathSceneSetup(self):
-        self.death_panel = Panel(scale=2, model='quad')
-        self.death_panel.retry = Button(parent=self.death_panel, color=color.red, position=(0, 0), text = "Retry")
-        self.death_panel.retry.on_click = self.on_respawn
-        self.death_panel.visible = False
-        self.death_panel.retry.enabled = False
-
-
-    def on_respawn(self):
-        print("respawning")
-        self.death_panel.visible = False
-        self.death_panel.retry.enabled = False
-        player.hp = 100
-        player.position = Vec3(0, .5, -10)
-        resetEnemies()
-
-
-    def on_player_death(self):
-        print("u died")
-        self.death_panel.retry.enabled = True
-        self.death_panel.visible = True
-        player.cursor.enabled = True
 
 
 # ======================================================= WORLD ======================================================================
 def skySetup():
+    print("creating sky")
     sun = DirectionalLight()
     sun.look_at(Vec3(1, -1, -1))
     Sky()
 
 
 def buildingSetup():
+    print ("creating buildings")
     ground = Entity(model='plane', collider='box', scale=64)
     for i in range(16):
         Entity(model='cube', origin_y=-.5, scale=2, texture='brick', texture_scale=(1, 2),
@@ -69,17 +28,21 @@ def buildingSetup():
             )
 
 
+enemies = []
+
 def enemySetup():
     global enemies
-    enemies = [Enemy(x=x * 10, target= player) for x in range(4)]
+    print ("Spawning enemies")
+    enemies = [Enemy(x=x * 10, target= player) for x in range(1)]
     mouse.traverse_target = Enemy.shootables_parent
 
 
 def resetEnemies():
     global enemies
+    print ("resetting enemies")
     for i in enemies:
         destroy(i)
-    enemies = [Enemy(x=x * 8, target= player) for x in range(4)]
+    enemies = [Enemy(x=x * 8, target= player) for x in range(2)]
 
 
 def worldSetup():
@@ -88,7 +51,8 @@ def worldSetup():
 
     skySetup()
     buildingSetup()
-    # enemySetup()
+    enemySetup()
+    print("World created")
 
 
 app = Ursina()
@@ -100,9 +64,12 @@ player = FirstPersonController(model='cube', z=-10, color=color.orange, origin_y
 player.collider = BoxCollider(player, Vec3(0, 1, 0), Vec3(1, 2, 1))
 
 player.hp = 100
+player.maxImmuneTimer = 0.8
 player.immuneTimer = 0.8
 healthbar = Panel(scale=20, model='quad')
 healthbar.alpha = 0
+
+print("player initiated")
 
 gun = Entity(model='cube', parent=camera, position=(.5, -.25, .25), scale=(.3, .2, 1), origin_z=-.5, color=color.red,
              on_cooldown=False)
@@ -112,10 +79,10 @@ grappleGun = Entity(model='cube', parent=camera, position=(-.5, -.25, .25), scal
                     color=color.green, grappling = False)
 grappleGun.flash = Entity(parent=grappleGun, z=1, world_scale=.5, model='quad', color=color.blue, enabled=False)
 
-
+print("weapons loaded")
 
 # ======================================================= SETUP ======================================================================
-ui = UI()
+ui = UI(editor_camera, player, gun, grappleGun, resetEnemies)
 worldSetup()
 
 
@@ -171,7 +138,6 @@ def release_grapple():
         grappleGun.grappling = False
         grappleGun.flash.enabled = False
         print("released")
-
 
 
 def shoot():
