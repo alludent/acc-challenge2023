@@ -22,30 +22,59 @@ for i in range(16):
            color=color.hsv(0, 0, random.uniform(.9, 1))
            )
 
-#Character set up
+
+def enemySetup():
+    enemies = [Enemy(x=x * 10, target= player) for x in range(4)]
+    mouse.traverse_target = Enemy.shootables_parent
+
+
+def worldSetup():
+    random.seed(2023)
+    Entity.default_shader = lit_with_shadows_shader
+
+    skySetup()
+    buildingSetup()
+    enemySetup()
+
+
+app = Ursina()
+
+# ======================================================= PLAYER/CAMERA ======================================================================
 editor_camera = EditorCamera(enabled=False, ignore_paused=True)
 player = FirstPersonController(model='cube', z=-20, color=color.orange, origin_y=-.5, speed=8)
 player.collider = BoxCollider(player, Vec3(0, 1, 0), Vec3(1, 2, 1))
+
 player.hp = 100
 player.max_immune_timer = 0.8
 player.immune_timer = 0.8
-healthbar = Panel(scale=2, model='quad')
+healthbar = Panel(scale=20, model='quad')
 healthbar.alpha = 0
+
 gun = Entity(model='cube', parent=camera, position=(.5, -.25, .25), scale=(.3, .2, 1), origin_z=-.5, color=color.red,
              on_cooldown=False)
 gun.muzzle_flash = Entity(parent=gun, z=1, world_scale=.5, model='quad', color=color.yellow, enabled=False)
 
 grappleGun = Entity(model='cube', parent=camera, position=(-.5, -.25, .25), scale=(.3, .2, 1), origin_z=-.5,
-                    color=color.green, on_cooldown=False)
+                    color=color.green, grappling = False)
 grappleGun.flash = Entity(parent=grappleGun, z=1, world_scale=.5, model='quad', color=color.blue, enabled=False)
 
-mouse.traverse_target = Enemy.shootables_parent
 
 
+# ======================================================= SETUP ======================================================================
+ui = UI()
+worldSetup()
+
+
+
+#   ======================================================= GAME FUNCS ======================================================================
 def update():
     player.immune_timer -= time.dt
+    if player.hp <= 0:
+        ui.on_player_death()
+
     if held_keys['left mouse']:
         shoot()
+
     if held_keys['right mouse']:
         grapple()
     if held_keys['escape']:
@@ -70,29 +99,22 @@ def shoot():
         invoke(gun.muzzle_flash.disable, delay=.05)
         invoke(setattr, gun, 'on_cooldown', False, delay=.15)
         if mouse.hovered_entity and hasattr(mouse.hovered_entity, 'hp'):
-            mouse.hovered_entity.hp -= 1000
+            mouse.hovered_entity.hp -= 100
             mouse.hovered_entity.blink(color.red)
 
 
 def grapple():
-    print("Grappling")
-    if not grappleGun.on_cooldown:
-        print("Succeed")
-        grappleGun.on_cooldown = True
-        grappleGun.flash.enabled = True
+    grappleGun.flash.enabled = True
 
-        direction = camera.forward
-        maxGrappleDistance = 50
+    direction = camera.forward
+    maxGrappleDistance = 50
 
-        # detect the point of impact
-        hit_info = raycast(grappleGun.flash.world_position, direction, maxGrappleDistance, ignore=[player])
+    # detect the point of impact
+    hitData = raycast(grappleGun.flash.world_position, direction, maxGrappleDistance, ignore=[player])
 
-        if hit_info.hit:
-            print("Hit")
-            # create line from the player to point of impact
-            grappleLine = Entity(model='quad', texture='white_cube', scale=(hit_info.distance, 0.1, 0.1),
-                                 position=camera.forward + Vec3(0, 0, 10),
-                                 rotation=(player.rotation_x, player.rotation_y, 0), color=color.green)
+    if hitData.hit and held_keys['right mouse']:
+        # in grappling animation
+        print("grappling")
 
             grappleLine.animate_scale((0.1, 0.1, 0.1), duration=0.2, curve=curve.in_expo)
             grappleLine.animate_position(hit_info.world_point, duration=0.2, curve=curve.in_expo)
