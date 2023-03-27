@@ -151,19 +151,18 @@ def grapple():
             grappleGun.grappling = True
             print("grappling")
 
-            pullDir = hitData.world_point - player.position
-            pullSpeed = 0.2  # adjust this to control the speed of the pull
-            while grappleGun.grappling and pullDir.length() > 0:
-                player.position += pullDir.normalized() * pullSpeed * time.dt
-                pullDir = hitData.world_point - player.position
 
     else:  # player is already grappling, update their position towards the point of impact
-        if hitData.hit:
-            pullDir = hitData.world_point - player.position
-            pullSpeed = 0.2  # adjust this to control the speed of the pull
-            while grappleGun.grappling and pullDir.length() > 0:
-                player.position += pullDir.normalized() * pullSpeed * time.dt
-                pullDir = hitData.world_point - player.position
+        # pull Line is the 3d vector towards the hit point  
+        pullLine = hitData.world_point - player.position
+        # ADD: pullIncr.pull incrememnt is a portion of pull line. 
+        # use to update player position while grappling 
+        # ADD: pullProgress. progress of player along the line.
+        # use to track progress of player grappling towards trajectory
+        pullSpeed = 0.2  # adjust this to control the speed of the pull
+        while grappleGun.grappling and pullLine.length() > 0:
+            player.position += pullLine.normalized() * pullSpeed * time.dt
+            pullLine = hitData.world_point - player.position
 
 
 def release_grapple():
