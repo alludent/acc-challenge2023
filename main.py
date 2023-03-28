@@ -55,6 +55,8 @@ def worldSetup():
     print("World created")
 
 
+
+# ======================================================= WINDOW SETUP =========================================================================
 app = Ursina()
 
 # ======================================================= PLAYER/CAMERA ======================================================================
@@ -104,37 +106,36 @@ def update():
         release_grapple()
 
 
-
 def grapple():
+    # grapple properties
+    direction = camera.forward
+    maxGrappleDistance = 50
+    hitData = None
+    grappleProgress = Vec3(0, 0, 0)                    
+
+    # detect the point of impact
+
     # only detect point of impact if not already grappling
     if not grappleGun.grappling:  
-
-        # grapple properties
-        direction = camera.forward
-        maxGrappleDistance = 50
-
-        # detect the point of impact
         hitData = raycast(grappleGun.flash.world_position, direction, maxGrappleDistance, ignore=[player])
 
         # start grappling animation
         if hitData.hit:
             grappleGun.flash.enabled = True
             grappleGun.grappling = True
-            print("grapple start")
+            print("grapple started")
             
     # player is already grappling, update their position towards the point of impact
-    else:  
-        print("grapple in progress")
-        # ADD: pullIncr.pull incrememnt is a portion of pull line. 
-        # use to update player position while grappling 
-        # ADD: pullProgress. progress of player along the line.
-        # use to track progress of player grappling towards trajectory
-
-        # pull Line is the 3d vector towards the hit point  
-        # pullLine = hitData.world_point - player.position
-        # while grappleGun.grappling and pullLine.length() > 0:
-        #     player.position += pullLine.normalized() * pullSpeed * time.dt
-        #     pullLine = hitData.world_point - player.position
+    if hitData is not None: 
+        grappleLine = hitData.world_point - player.position # the 3d vector towards the hit point  
+        print("grapple vec ", grappleLine)
+        # dl = grappleLine * 0.05                       # a portion of pull line. 
+        
+        # track progress of player along grapple line
+        # if grappleProgress < grappleLine:
+        #     print(grappleProgress)
+        #     grappleProgress += dl  
+        #     player.set_position(player.position + grappleProgress * time.dt) 
 
 
 def release_grapple():
