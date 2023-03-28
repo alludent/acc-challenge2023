@@ -19,6 +19,7 @@ class Enemy(Entity):
         self.actor.setScale(1 / self.scale_x, 1 / self.scale_y, 1 / self.scale_z)
         self.actor.setHpr(180, 0, 0)
         # use .play() instead of loop() to play it once.
+
         self.healthBar = Entity(parent=self, y=1.2, model='cube', color=color.red, world_scale=(1.5, .1, .1))
         self.maxHp = 100
         self.hp = self.maxHp
@@ -33,11 +34,13 @@ class Enemy(Entity):
         self.jumping = False
         self.airTime = 0
         self.damage = 30
+
         invoke(setattr, self, 'leap_on_cooldown', False, delay=5)
 
     def start_fall(self):
         self.y_animator.pause()
         self.jumping = False
+        
     def jump(self):
         if not self.grounded:
             return
