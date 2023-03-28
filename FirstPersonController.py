@@ -99,6 +99,7 @@ class FirstPersonController(Entity):
         self.y_animator.pause()
         self.jumping = False
 
+
     def land(self):
         # print('land')
         self.air_time = 0
@@ -111,3 +112,10 @@ class FirstPersonController(Entity):
     def on_disable(self):
         mouse.locked = False
         self.cursor.enabled = False
+        
+
+    def stop_gravity(self):
+        self.gravity = 0
+
+    def start_gravity(self):
+        self.gravity = 0.3
