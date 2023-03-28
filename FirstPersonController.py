@@ -26,7 +26,7 @@ class FirstPersonController(Entity):
         self.air_time = 0
 
         #HealthBar
-        healthbar = HealthBar(100, bar_color = color.hex("E80000"), roundness = 0.5, y = window.top_left[1] - 0.01, scale_y = 0.03, scale_x = 0.3)
+        self.healthbar = HealthBar(100, bar_color = color.hex("E80000"), roundness = 0.5, y = window.top_left[1] - 0.01, scale_y = 0.03, scale_x = 0.3)
 
 
         for key, value in kwargs.items():
