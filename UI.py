@@ -1,5 +1,5 @@
 
-
+from ursina.prefabs.health_bar import HealthBar
 from ursina import *
 
 class UI:
@@ -13,7 +13,9 @@ class UI:
         pause_handler = Entity(ignore_paused=True, input=self.pause_input)
 
         self.deathSceneSetup()
-        
+
+    def createHealthBar(self):
+        return HealthBar(self.player.hp, bar_color=color.hex("E80000"), roundness=0.5, y= window.top_left[1] - 0.01, scale_y=0.03, scale_x=0.3)
 
     def pause_input(self, key):
         if key == 'tab':  # press tab to toggle edit/play mode
@@ -41,8 +43,12 @@ class UI:
         print("respawning")
         self.death_panel.visible = False
         self.death_panel.retry.enabled = False
-        self.player.hp = 100
+
         self.player.position = Vec3(0, .5, -10)
+        
+        self.player.hp = 100
+        self.player.healthbar.value = self.player.hp
+
         self.resetEnemies()
 
 
