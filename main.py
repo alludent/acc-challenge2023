@@ -90,7 +90,9 @@ worldSetup()
 #   ======================================================= GAME FUNCS ======================================================================
 def update():
     player.immuneTimer -= time.dt
-    if player.hp <= 0:
+
+    # in relation to players spawn position, +x = right, +z = forward, +y = upward
+    if player.hp <= 0 or player.position.y < -50:
         ui.on_player_death()
 
     if held_keys['left mouse']:
@@ -106,7 +108,7 @@ def update():
 def grapple():
     # only detect point of impact if not already grappling
     if not grappleGun.grappling:  
-        
+
         # grapple properties
         direction = camera.forward
         maxGrappleDistance = 50
