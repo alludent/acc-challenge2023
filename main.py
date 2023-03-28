@@ -66,7 +66,7 @@ player.collider = BoxCollider(player, Vec3(0, 1, 0), Vec3(1, 2, 1))
 player.hp = 100
 player.maxImmuneTimer = 0.8
 player.immuneTimer = 0.8
-healthbar = Panel(scale=20, model='quad')
+healthbar = Panel(scale=5, model='quad')
 healthbar.alpha = 0
 
 print("player initiated")
@@ -106,38 +106,40 @@ def update():
 def grapple():
     # only detect point of impact if not already grappling
     if not grappleGun.grappling:  
-        grappleGun.flash.enabled = True
-
+        
+        # grapple properties
         direction = camera.forward
         maxGrappleDistance = 50
 
         # detect the point of impact
         hitData = raycast(grappleGun.flash.world_position, direction, maxGrappleDistance, ignore=[player])
 
+        # start grappling animation
         if hitData.hit:
-            # start grappling animation
+            grappleGun.flash.enabled = True
             grappleGun.grappling = True
-            print("grappling")
+            print("grapple start")
             
     # player is already grappling, update their position towards the point of impact
     else:  
-        # pull Line is the 3d vector towards the hit point  
-        pullLine = hitData.world_point - player.position
+        print("grapple in progress")
         # ADD: pullIncr.pull incrememnt is a portion of pull line. 
         # use to update player position while grappling 
         # ADD: pullProgress. progress of player along the line.
         # use to track progress of player grappling towards trajectory
-        pullSpeed = 0.2  # adjust this to control the speed of the pull
-        while grappleGun.grappling and pullLine.length() > 0:
-            player.position += pullLine.normalized() * pullSpeed * time.dt
-            pullLine = hitData.world_point - player.position
+
+        # pull Line is the 3d vector towards the hit point  
+        # pullLine = hitData.world_point - player.position
+        # while grappleGun.grappling and pullLine.length() > 0:
+        #     player.position += pullLine.normalized() * pullSpeed * time.dt
+        #     pullLine = hitData.world_point - player.position
 
 
 def release_grapple():
     if grappleGun.grappling:
         grappleGun.grappling = False
         grappleGun.flash.enabled = False
-        print("released")
+        print("grapple released")
 
 
 def shoot():
