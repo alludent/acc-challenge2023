@@ -68,6 +68,8 @@ player.collider = BoxCollider(player, Vec3(0, 1, 0), Vec3(1, 2, 1))
 player.hp = 100
 player.maxImmuneTimer = 0.8
 player.immuneTimer = 0.8
+healthbar = Panel(scale=5, model='quad')
+healthbar.alpha = 0
 
 print("player initiated")
 
@@ -81,10 +83,9 @@ grappleGun.flash = Entity(parent=grappleGun, z=1, world_scale=.5, model='quad', 
 
 print("weapons loaded")
 
-# ======================================================= SETUP ======================================================================
+# ======================================================= GAME SETUP ======================================================================
 ui = UI(editor_camera, player, gun, grappleGun, resetEnemies)
 worldSetup()
-
 
 
 #   ======================================================= GAME FUNCS ======================================================================
@@ -106,12 +107,10 @@ def update():
 
 def grapple():
     # grapple properties
-    direction = camera.forward
+    direction = camera.forward  
     maxGrappleDistance = 50
     hitData = None
     grappleProgress = Vec3(0, 0, 0)                    
-
-    # detect the point of impact
 
     # only detect point of impact if not already grappling
     if not grappleGun.grappling:  
@@ -124,7 +123,7 @@ def grapple():
             print("grapple started")
             
     # player is already grappling, update their position towards the point of impact
-    if hitData is not None: 
+    if grappleGun.grappling and hitData is not None: 
         grappleLine = hitData.world_point - player.position # the 3d vector towards the hit point  
         print("grapple vec ", grappleLine)
         # dl = grappleLine * 0.05                       # a portion of pull line. 
