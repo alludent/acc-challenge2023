@@ -68,8 +68,6 @@ player.collider = BoxCollider(player, Vec3(0, 1, 0), Vec3(1, 2, 1))
 player.hp = 100
 player.maxImmuneTimer = 0.8
 player.immuneTimer = 0.8
-healthbar = Panel(scale=5, model='quad')
-healthbar.alpha = 0
 
 print("player initiated")
 

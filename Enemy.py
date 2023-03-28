@@ -32,6 +32,7 @@ class Enemy(Entity):
         self.fallAfter = .35  # will interrupt jump up
         self.jumping = False
         self.airTime = 0
+        self.damage = 30
         invoke(setattr, self, 'leap_on_cooldown', False, delay=5)
 
     def start_fall(self):
@@ -69,6 +70,7 @@ class Enemy(Entity):
         if dist < 2 and target.immuneTimer <= 0:
             target.hp -= 30
             target.immuneTimer = target.maxImmuneTimer
+            target.healthbar.value -= 30
         #            healthbar.blink(color.tred)
         self.healthBar.alpha = max(0, self.healthBar.alpha - time.dt)
         if dist <15 and self.leap_on_cooldown ==False:
