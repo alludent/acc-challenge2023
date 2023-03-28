@@ -78,8 +78,9 @@ gun = Entity(model='cube', parent=camera, position=(.5, -.25, .25), scale=(.3, .
              on_cooldown=False)
 gun.muzzle_flash = Entity(parent=gun, z=1, world_scale=.5, model='quad', color=color.yellow, enabled=False)
 
-grappleGun = Entity(model='cube', parent=camera, position=(-.5, -.25, .25), scale=(.3, .2, 1), origin_z=-.5,
-                    color=color.green, grappling = False, hitData = None, line = None, progress = Vec3(0, 0 ,0))
+grappleGun = Entity(model='cube', parent=camera, position=(-.5, -.25, .25), scale=(.3, .2, 1), origin_z=-.5, color=color.green, 
+                    direction = camera.forward, distance = 50, grappling = False, 
+                    hitData = None, line = None, progress = Vec3(0, 0 ,0))
 grappleGun.flash = Entity(parent=grappleGun, z=1, world_scale=.5, model='quad', color=color.blue, enabled=False)
 
 print("weapons loaded")
@@ -108,13 +109,9 @@ def update():
 
 
 def grapple():
-    # grapple properties
-    direction = camera.forward  
-    maxGrappleDistance = 50
-
     # only detect point of impact if not already grappling
     if not grappleGun.grappling:  
-        grappleGun.hitData = raycast(grappleGun.flash.world_position, direction, maxGrappleDistance, ignore=[player])
+        grappleGun.hitData = raycast(grappleGun.flash.world_position, grappleGun.direction, grappleGun.distance, ignore=[player])
 
         # start grappling animation
         if grappleGun.hitData.hit:
@@ -130,6 +127,7 @@ def grapple():
         # a portion of the Line
         dl = grappleGun.line * 0.05                      
         grappleGun.rogress += dl
+        
         print(grappleGun.progress)
         # track progress of player along grapple line
         # if grappleProgress < grappleGun.line:
