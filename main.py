@@ -1,6 +1,9 @@
 from direct.showbase.ShowBase import ShowBase
+
 from ursina import *
 from ursina.shaders import lit_with_shadows_shader
+from ursina.prefabs.health_bar import HealthBar
+
 from FirstPersonController import FirstPersonController
 from Enemy import Enemy
 from UI import UI
@@ -68,8 +71,6 @@ player.collider = BoxCollider(player, Vec3(0, 1, 0), Vec3(1, 2, 1))
 player.hp = 100
 player.maxImmuneTimer = 0.8
 player.immuneTimer = 0.8
-healthbar = Panel(scale=5, model='quad')
-healthbar.alpha = 0
 
 print("player initiated")
 
@@ -78,13 +79,14 @@ gun = Entity(model='cube', parent=camera, position=(.5, -.25, .25), scale=(.3, .
 gun.muzzle_flash = Entity(parent=gun, z=1, world_scale=.5, model='quad', color=color.yellow, enabled=False)
 
 grappleGun = Entity(model='cube', parent=camera, position=(-.5, -.25, .25), scale=(.3, .2, 1), origin_z=-.5,
-                    color=color.green, grappling = False)
+                    color=color.green, grappling = False, hitData = None, line = None, progress = Vec3(0, 0 ,0))
 grappleGun.flash = Entity(parent=grappleGun, z=1, world_scale=.5, model='quad', color=color.blue, enabled=False)
 
 print("weapons loaded")
 
 # ======================================================= GAME SETUP ======================================================================
 ui = UI(editor_camera, player, gun, grappleGun, resetEnemies)
+player.healthbar = ui.createHealthBar()
 worldSetup()
 
 
@@ -109,36 +111,39 @@ def grapple():
     # grapple properties
     direction = camera.forward  
     maxGrappleDistance = 50
-    hitData = None
-    grappleProgress = Vec3(0, 0, 0)                    
 
     # only detect point of impact if not already grappling
     if not grappleGun.grappling:  
-        hitData = raycast(grappleGun.flash.world_position, direction, maxGrappleDistance, ignore=[player])
+        grappleGun.hitData = raycast(grappleGun.flash.world_position, direction, maxGrappleDistance, ignore=[player])
 
         # start grappling animation
-        if hitData.hit:
+        if grappleGun.hitData.hit:
             grappleGun.flash.enabled = True
             grappleGun.grappling = True
+            # create vector towards point of impact
+            grappleGun.line = grappleGun.hitData.world_point - player.position 
             print("grapple started")
             
     # player is already grappling, update their position towards the point of impact
-    if grappleGun.grappling and hitData is not None: 
-        grappleLine = hitData.world_point - player.position # the 3d vector towards the hit point  
-        print("grapple vec ", grappleLine)
-        # dl = grappleLine * 0.05                       # a portion of pull line. 
-        
+    if grappleGun.grappling and grappleGun.hitData is not None and grappleGun.line is not None and grappleGun.progress < grappleGun.line: 
+        print("grapple vec ", grappleGun.line)
+        # a portion of the Line
+        dl = grappleGun.line * 0.05                      
+        grappleGun.rogress += dl
+        print(grappleGun.progress)
         # track progress of player along grapple line
-        # if grappleProgress < grappleLine:
-        #     print(grappleProgress)
+        # if grappleProgress < grappleGun.line:
         #     grappleProgress += dl  
         #     player.set_position(player.position + grappleProgress * time.dt) 
 
 
 def release_grapple():
     if grappleGun.grappling:
-        grappleGun.grappling = False
         grappleGun.flash.enabled = False
+        grappleGun.grappling = False
+        grappleGun.hitData = None
+        grappleGun.line = None
+        grappleGun.progress = Vec3(0, 0, 0)
         print("grapple released")
 
 
