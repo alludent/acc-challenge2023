@@ -20,16 +20,9 @@ def skySetup():
 
 def buildingSetup():
     print ("creating buildings")
-    ground = Entity(model='plane', collider='box', scale=64)
-    for i in range(16):
-        Entity(model='cube', origin_y=-.5, scale=2, texture='brick', texture_scale=(1, 2),
-            x=random.uniform(-20, 20),
-            z=random.uniform(-8, 8) + 18,
-            collider='box',
-            scale_y=random.uniform(15, 25),
-            color=color.hsv(0, 0, random.uniform(.9, 1))
-            )
-
+    environment = Entity(model='ComplexColliders', texture = 'CityTexture', collider='mesh', scale=1.5)
+    ground = Entity(model='Ground', texture='CityTexture', collider='box', scale=1.5)
+    mountains = Entity(model='Mountains', texture='CityTexture', collider='box', scale=1.5)
 
 enemies = []
 
