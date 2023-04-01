@@ -47,10 +47,9 @@ class FirstPersonController(Entity):
         feet_ray = raycast(self.position + Vec3(0, 0.5, 0), self.direction, ignore=(self,), distance=.5, debug=False)
         head_ray = raycast(self.position + Vec3(0, self.height - .1, 0), self.direction, ignore=(self,), distance=.5,
                            debug=False)
-        top_ray = ray = raycast(self.world_position + (0, self.height, 0), self.up, ignore=(self,))
+        top_ray = raycast(self.world_position + (0, self.height, 0), self.up, ignore=(self,))
         if top_ray.distance<0.2:
             self.y -= 0.2
-        print(top_ray.distance)
         if not feet_ray.hit and not head_ray.hit:
             move_amount = self.direction * time.dt * self.speed
 
@@ -70,8 +69,7 @@ class FirstPersonController(Entity):
             # gravity
             ray = raycast(self.world_position + (0, self.height/2, 0), self.down, ignore=(self,))
             # ray = boxcast(self.world_position+(0,2,0), self.down, ignore=(self,))
-
-            if ray.distance <= self.height + .1:
+            if ray.distance <= self.height/2 + .1:
                 if not self.grounded:
                     self.land()
                 self.grounded = True
