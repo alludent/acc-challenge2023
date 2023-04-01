@@ -114,8 +114,10 @@ class FirstPersonController(Entity):
         self.cursor.enabled = False
         
 
-    def stop_gravity(self):
+    def stop(self):
         self.gravity = 0
+        self.speed = 0
 
-    def start_gravity(self):
+    def resume(self):
         self.gravity = 0.3
+        self.speed = 8
