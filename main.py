@@ -97,7 +97,7 @@ def grapple():
 # only detect point of impact if not already grappling
     if not grappleGun.grappling:  
         player.stop()
-        grappleGun.hitData = raycast(player.world_position, camera.forward, grappleGun.range, ignore=[player], debug= True)
+        grappleGun.hitData = raycast(camera.world_position, camera.forward, grappleGun.range, ignore=[player], debug= True)
 
         # start grappling animation
         if grappleGun.hitData.hit:
