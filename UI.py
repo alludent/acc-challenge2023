@@ -10,14 +10,15 @@ class UI:
         self.grappleGun = grappleGun
         self.resetEnemies = resetEnemies
         
-        pause_handler = Entity(ignore_paused=True, input=self.pause_input)
+        pause_handler = Entity(ignore_paused=True, input=self.on_pause)
 
         self.deathSceneSetup()
+        self.pauseMenuSetup()
 
     def createHealthBar(self):
         return HealthBar(self.player.hp, bar_color=color.hex("E80000"), roundness=0.5, y= window.top_left[1] - 0.01, scale_y=0.03, scale_x=0.3)
 
-    def pause_input(self, key):
+    def on_pause(self, key):
         if key == 'tab':  # press tab to toggle edit/play mode
             self.editor_camera.enabled = not self.editor_camera.enabled
 
@@ -29,6 +30,29 @@ class UI:
             self.editor_camera.position = self.player.position
 
             application.paused = self.editor_camera.enabled
+            
+            print('pausing')
+            self.pause_menu.retry.enabled = True
+            self.pause_menu.exit.enabled = True
+            self.pause_menu.visible = True
+            
+            
+    def pauseMenuSetup(self):
+        self.pause_menu = Entity( parent=camera.ui, enabled=False, model='quad', scale=(.6, .8), position=(0, 0), 
+                            color=color.rgba(0, 0, 0, 200), origin=(-.5, .5))
+            
+        self.pause_menu.retry = Button( parent=self.pause_menu, text='Restart', position=(0, .1), on_click=self.restart_game)
+        self.pause_menu.exit = Button( parent=self.pause_menu, text='Exit', position=(0, -.1), on_click=application.quit)
+        self.pause_menu.visible = False
+        self.pause_menu.retry.enabled = False
+        self.pause_menu.exit.enabled = False    
+
+    def restart_game(self):
+        print("restarting")
+        self.pause_menu.visible = False
+        self.pause_menu.retry.enabled = False
+        self.pause_menu.exit.enabled = False
+        self.player.cursor.enabled = False
 
 
     def deathSceneSetup(self):
@@ -57,3 +81,4 @@ class UI:
         self.death_panel.retry.enabled = True
         self.death_panel.visible = True
         self.player.cursor.enabled = True
+
