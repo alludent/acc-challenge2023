@@ -127,7 +127,14 @@ def grapple():
     elif grappleGun.grappling and held_keys['right mouse']:
         if time.time() - grappleGun.grappleStart >= 0.3:
             # update player's velocity based on the grapple point
-            player.position += grappleGun.velocity * time.dt
+            feet_ray = raycast(player.position + Vec3(0, 0.5, 0), grappleGun.line, ignore=(player,), distance=.5, debug=False)
+            head_ray = raycast(player.position + Vec3(0, player.height - .1, 0), grappleGun.line, ignore=(player,), distance=.5,
+                           debug=False)
+            if not feet_ray.hit and not head_ray.hit:
+                player.position += grappleGun.velocity * time.dt
+                
+
+            
             # player.animate_position(grappleGun.hitData.world_point, duration = .5)
             # release_grapple()
 

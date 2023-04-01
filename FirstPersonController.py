@@ -6,8 +6,8 @@ class FirstPersonController(Entity):
         self.cursor = Entity(parent=camera.ui, model='quad', color=color.pink, scale=.008, rotation_z=45)
         super().__init__()
         self.speed = 8
-        self.height = 2
-        self.camera_pivot = Entity(parent=self, y=self.height)
+        self.height = 4
+        self.camera_pivot = Entity(parent=self, y=self.height-2)
 
         camera.parent = self.camera_pivot
         camera.position = (0, 0, 0)
