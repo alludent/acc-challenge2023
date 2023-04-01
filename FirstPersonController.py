@@ -12,7 +12,7 @@ class FirstPersonController(Entity):
         camera.parent = self.camera_pivot
         camera.position = (0, 0, 0)
         camera.rotation = (0, 0, 0)
-        camera.fov = 130
+        camera.fov = 110
         mouse.locked = True
         self.mouse_sensitivity = Vec2(40, 40)
 
