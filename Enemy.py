@@ -13,12 +13,12 @@ class Enemy(Entity):
         self.leap_on_cooldown = True
         self.collider = 'box'
         self.alpha = 0
-        self.actor = Actor("Entities/ODIUS/ODIUS.glb")
+        self.actor = Actor("Assets/Entities/ODIUS/ODIUS.obj")
         self.actor.reparent_to(self)
         self.actor.setPos(0, 0.4, 0)
         self.actor.setScale(1 / self.scale_x, 1 / self.scale_y, 1 / self.scale_z)
         self.actor.setHpr(180, 0, 0)
-        # use .play() instead of loop() to play it once
+        # use .play() instead of loop() to play it once.
 
         self.healthBar = Entity(parent=self, y=1.2, model='cube', color=color.red, world_scale=(1.5, .1, .1))
         self.maxHp = 100
