@@ -15,9 +15,8 @@ def environmentSetup():
     sun = DirectionalLight()
     Sky()
     print ("creating buildings")
-    environment = Entity(model="Assets/Map/RuinedCity.obj", texture = 'Assets/Map/CityTexture.png', collider='mesh', scale=1.5)
-    ground = Entity(model='Assets/Map/Ground.obj', texture='Assets/Map/CityTexture.png', collider='box', scale=1.5)
-    mountains = Entity(model='Assets/Map/Mountains.obj', texture='Assets/Map/CityTexture.png', collider='box', scale=1.5)
+    ground = Entity(model='plane', texture='Assets/Map/CityTexture.png', collider='box', scale=256)
+    building = Entity(model='RuinedBuilding', texture='Assets/Map/CityTexture.png', collider='mesh', scale=4)
     # ground = Entity(model='plane', collider='box', scale=64, color = color.green)
 
 enemies = []
