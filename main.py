@@ -72,7 +72,7 @@ print("weapons loaded")
 
 # ======================================================= GAME SETUP ======================================================================
 ui = UI(editor_camera, player, gun, grappleGun, resetEnemies)
-player.healthbar = ui.create_health_bar()
+player.healthbar = ui.create_healthbar()
 worldSetup()
 
 
