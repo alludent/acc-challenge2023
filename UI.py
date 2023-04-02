@@ -1,5 +1,6 @@
 from ursina.prefabs.health_bar import HealthBar
 from ursina import *
+import sys
 
 class UI:
     def __init__(self, editor_camera, player, gun, grappleGun, resetEnemies):
@@ -32,10 +33,14 @@ class UI:
         application.paused = self.editor_camera.enabled
 
     def pause_menu_setup(self):
-        self.pause_menu = Panel(scale=2, model='quad')
+        self.pause_menu = Panel(scale = 2, model='quad', color=color.rgba(0,0,0,150))
             
-        self.pause_menu.retry = Button( parent=self.pause_menu, text='Restart', position=(0, .1), on_click=self.on_respawn)
-        self.pause_menu.exit = Button( parent=self.pause_menu, text='Exit', position=(0, -.1), on_click=application.quit)
+        self.pause_menu.retry = Button( parent=self.pause_menu, text='Restart', position=(.05, 0), 
+                                            highlight_color= color.yellow, scale = 0.06, 
+                                            on_click=self.on_respawn)
+        self.pause_menu.exit = Button( parent=self.pause_menu, text='Exit', position=(-.05,0), 
+                                            highlight_color= color.green, scale = 0.06, 
+                                            on_click=application.quit)
         self.pause_menu.visible = False
         self.pause_menu.retry.enabled = False
         self.pause_menu.exit.enabled = False  
@@ -85,4 +90,5 @@ class UI:
     def on_player_death(self):
         print("u died")
         self.death_panel.retry.enabled = True
-        self.death
+        self.death_panel.visible = True
+        self.set_player_state()
