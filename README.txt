@@ -23,7 +23,19 @@ Main:
   Defines player functions (shoot, grapple)
   (FUNC) UPDATE:
     respawns enemies every 45 seconds
-    checks for left and right mouse inputs
+    checks for left and right mouse inputs and acts accordingly
+  (FUNC) GRAPPLE:
+    determines when to grapple
+    determines if something was grappled using raycast
+    pulls the player towards the point of impact
+    makes sure the player doesn't collide with anything using top and bottom raycast
+    player stays at the point of impact until release right mouse
+  (FUNC) RELEASE_GRAPPLE():
+    called when player releases right click
+    resets to default variables associated with not grappling
+  (FUNC) SHOOT():
+    if camera center(mouse) is hovered over an entity, decrease that entitie's hp
+    
 Menu:
   This is the main menu screen. 
 FirstPersonController
@@ -31,7 +43,7 @@ FirstPersonController
   (FUNC) UPDATE:
     checks for movement inputs (WASD)
     manages mouse control for the camera
-    detects collisions using ray cast
+    detects collisions using ray cast from the top of the player and bottom of the player
 UI:
   manages death screen, menus, and player healthbar
 Enemy:
