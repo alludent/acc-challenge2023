@@ -6,34 +6,37 @@ from ursina.prefabs.health_bar import HealthBar
 from FirstPersonController import FirstPersonController
 from Enemy import Enemy
 from UI import UI
+import random
 
 
 
 
 # ======================================================= WORLD ======================================================================
 def environmentSetup():
-    print("creating sky")
     sun = DirectionalLight()
     Sky()
-    print ("creating buildings")
     ground = Entity(model='plane', texture='Assets/Map/CityTexture.png', collider='box', scale=256)
-    building = Entity(model='RuinedBuilding', texture='Assets/Map/CityTexture.png', collider='mesh', scale=4)
-    # ground = Entity(model='plane', collider='box', scale=64, color = color.green)
+    building = Entity(model='Assets/Map/RuinedBuilding.obj', texture='Assets/Map/CityTexture.png', collider='mesh', scale=4)
 
 enemies = []
+spawnEnemies = False
 
 def enemySetup():
     global enemies
-    print ("Spawning enemies")
-    enemies = [Enemy(x=x * 10, target= player) for x in range(1)]
+    spawn_radius = 20
+    spawn_position = player.position + (random.uniform(-spawn_radius, spawn_radius), 0, random.uniform(-spawn_radius, spawn_radius))
     mouse.traverse_target = Enemy.shootables_parent
+    
+    for i in range(4):
+        spawn_position = player.position + (random.uniform(-spawn_radius, spawn_radius), 0, random.uniform(-spawn_radius, spawn_radius))
+        enemy = Enemy(position=spawn_position, target=player)
+        enemies.append(enemy)
 
 def resetEnemies():
     global enemies
-    print ("resetting enemies")
     for i in enemies:
         destroy(i)
-    enemies = [Enemy(x=x * 8, target= player) for x in range(2)]
+    enemySetup()
 
 
 def worldSetup():
@@ -42,8 +45,6 @@ def worldSetup():
 
     environmentSetup()
     enemySetup()
-    print("World created")
-
 
 
 # ======================================================= WINDOW SETUP =========================================================================
@@ -59,27 +60,33 @@ player.hp = 100
 player.maxImmuneTimer = 0.8
 player.immuneTimer = 0.8
 
-print("player initiated")
 
 gun = Entity(model='cube', parent=camera, position=(.5, -.25, .25), scale=(.3, .2, 1), origin_z=-.5, color=color.red,
              on_cooldown=False)
 gun.muzzle_flash = Entity(parent=gun, z=1, world_scale=.5, model='quad', color=color.yellow, enabled=False)
 
 grappleGun = Entity(model='cube', parent=camera, position=(-.5, -.25, .25), scale=(.3, .2, 1), origin_z=-.5, color=color.green, 
-                    range = 25, grappling = False)
+                    range = 40, grappling = False)
 grappleGun.flash = Entity(parent=grappleGun, z=1, world_scale=.5, model='quad', color=color.blue, enabled=False)
 
-print("weapons loaded")
 
 # ======================================================= GAME SETUP ======================================================================
 ui = UI(editor_camera, player, gun, grappleGun, resetEnemies)
 player.healthbar = ui.create_healthbar()
 ui.mainmenu()
 worldSetup()
+reset_time = time.time() + 60  # Set the initial reset time to 20 seconds from now
 
 
 #   ======================================================= GAME FUNCS ======================================================================
 def update():
+    global reset_time
+
+    if time.time() > reset_time:
+        resetEnemies()
+        reset_time = time.time() + 60
+        
+        
     player.immuneTimer -= time.dt
 
     # in relation to players spawn position, +x = right, +z = forward, +y = upward
@@ -113,8 +120,6 @@ def grapple():
             # how fast to move the plyaer toward point of impact
             grappleGun.velocity = grappleGun.line.normalized() * 20
 
-            print("grapple started")
-            print("grapple vec ", grappleGun.line)
 
             # finetuning, tolerance has to increase for higher grappling points (only here bc collisions are not in place yet)
             if grappleGun.line.y - player.position.y > 15: 
@@ -147,7 +152,6 @@ def grapple():
             if distanceToPointOfImpact <= grappleGun.tolerance:
                 # stop grappling
                 grappleGun.velocity = Vec3(0, 0, 0)
-                print("grapple ended")
 
 
 def release_grapple():
@@ -157,7 +161,6 @@ def release_grapple():
         grappleGun.flash.enabled = False
         grappleGun.grappling = False
 
-        print("grapple released")
 
 
 def shoot():
@@ -171,7 +174,7 @@ def shoot():
         invoke(gun.muzzle_flash.disable, delay=.05)
         invoke(setattr, gun, 'on_cooldown', False, delay=.15)
         if mouse.hovered_entity and hasattr(mouse.hovered_entity, 'hp'):
-            mouse.hovered_entity.hp -= 100
+            mouse.hovered_entity.hp -= 20
             mouse.hovered_entity.blink(color.red)
 
 
