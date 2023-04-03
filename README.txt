@@ -2,7 +2,7 @@ Robot Rampage created by Wu, Deric, Chris, Albert
 
 Robot Rampage ========================================================================================================================================================
 
-This project was developed using Python 3.10.1. "main.pyw" serves as the entrypoint to the application. The "requirements.txt" file includes all dependencies required in this project - to install all dependencies listed in this file, run the following command from command line:
+This project was developed using Python 3.10.1. "main.py" serves as the entrypoint to the application. The "requirements.txt" file includes all dependencies required in this project - to install all dependencies listed in this file, run the following command from command line:
 
 py -m pip install -r requirements.txt
 
