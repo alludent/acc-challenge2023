@@ -74,14 +74,13 @@ print("weapons loaded")
 # ======================================================= GAME SETUP ======================================================================
 ui = UI(editor_camera, player, gun, grappleGun, resetEnemies)
 player.healthbar = ui.create_healthbar()
+ui.mainmenu()
 worldSetup()
 
 
 #   ======================================================= GAME FUNCS ======================================================================
 def update():
     player.immuneTimer -= time.dt
-
-    ui.main_menu_setup()
 
     # in relation to players spawn position, +x = right, +z = forward, +y = upward
     if player.hp <= 0 or player.position.y < -50:

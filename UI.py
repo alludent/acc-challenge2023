@@ -38,28 +38,24 @@ class UI:
         application.paused = self.editor_camera.enabled
 
     def main_menu_setup(self):
-        self.mainmenu = Panel(scale = 2, model='quad', color=color.rgba(0,0,0,150))
-        self.start_button = Button(parent=self.mainmenu, text='Start', position=(.05, 0), 
-                                            highlight_color= color.yellow, scale = 0.06, 
+        self.main_menu = Panel(scale = 2, model='quad', color=color.rgba(0,0,0,150))
+        self.main_menu.retry = Button(parent=self.main_menu, text='Start', position=(0, .05), 
+                                            highlight_color= color.blue, scale = 0.06, 
                                             on_click=self.on_respawn)
-        self.quit_button = Button(parent=self.mainmenu, text='Quit', position=(-.05,0), 
-                                            highlight_color= color.green, scale = 0.06, 
+        self.main_menu.exit = Button(parent=self.main_menu, text='Quit', position=(0, -.05), 
+                                            highlight_color= color.red, scale = 0.06, 
                                             on_click=application.quit)
-        self.mainmenu.visible = True
-        self.start_button.enabled = True
-        self.quit_button.enabled = True
+        self.main_menu.visible = False
+        self.main_menu.retry.enabled = False
+        self.main_menu.exit.enabled = False
 
+    
     def mainmenu(self):
-        if self.mainmenu.visible:
-            self.set_player_state()
-
-            self.mainmenu.visible = True
-            self.start_button.enabled = True
-            self.quit_button.enabled = True
-        else:
-            self.mainmenu.visible = False
-            self.start_button.enabled = False
-            self.quit_button.enabled = False
+        print("Main Menu")
+        self.main_menu.visible = True
+        self.main_menu.retry.enabled = True
+        self.main_menu.exit.enabled = True
+        self.set_player_state()
 
 
 
@@ -107,9 +103,9 @@ class UI:
         self.pause_menu.visible = False
         self.pause_menu.retry.enabled = False
         self.pause_menu.exit.enabled = False
-        self.mainmenu.visible = False
-        self.start_button.visible = False
-        self.quit_button.visible = False
+        self.main_menu.visible = False
+        self.main_menu.retry.enabled  = False
+        self.main_menu.exit.enabled  = False
         self.death_panel.visible = False
         self.death_panel.retry.enabled = False
 
