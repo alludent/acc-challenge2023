@@ -1,5 +1,6 @@
 from ursina import *
 from ursina import curve
+from UI import *
 
 
 colourH = color.rgba(18, 152, 255, 180)
@@ -76,7 +77,7 @@ class MainMenu(Entity):
             # Main Menu
             if self.mainmenu.enabled:
                 if highlighted(self.start_button):
-                    self.start()
+                    self.set_player_state()
                 elif highlighted(self.shop_button):
                     self.gun_menu.enable()
                     self.mainmenu.disable()
@@ -86,7 +87,18 @@ class MainMenu(Entity):
 
     def start(self):
         self.mainmenu.disable()
-        set.player.state()
+        self.set_player_state()
+            
+        if self.editor_camera.enabled:
+            print('pausing')
+            self.pause_menu.retry.enabled = True
+            self.pause_menu.exit.enabled = True
+            self.pause_menu.visible = True
+        else:
+            print('unpausing')
+            self.pause_menu.retry.enabled = False
+            self.pause_menu.exit.enabled = False
+            self.pause_menu.visible = False
 
     def update_menu(self, menu):
         for c in menu.children:

@@ -9,6 +9,7 @@ from UI import UI
 
 
 
+
 # ======================================================= WORLD ======================================================================
 def environmentSetup():
     print("creating sky")
@@ -79,6 +80,8 @@ worldSetup()
 #   ======================================================= GAME FUNCS ======================================================================
 def update():
     player.immuneTimer -= time.dt
+
+    ui.main_menu_setup()
 
     # in relation to players spawn position, +x = right, +z = forward, +y = upward
     if player.hp <= 0 or player.position.y < -50:
@@ -171,7 +174,6 @@ def shoot():
         if mouse.hovered_entity and hasattr(mouse.hovered_entity, 'hp'):
             mouse.hovered_entity.hp -= 100
             mouse.hovered_entity.blink(color.red)
-
 
 
 app.run()
