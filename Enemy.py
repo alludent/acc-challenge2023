@@ -16,7 +16,7 @@ class Enemy(Entity):
         self.actor = Actor("Assets/Entities/ODIUS/ODIUS.obj")
         self.actor.reparent_to(self)
         self.actor.setPos(0, 0.4, 0)
-        self.actor.setScale(1 / self.scale_x, 1 / self.scale_y, 1 / self.scale_z)
+        self.actor.setScale(0.35 / self.scale_x, 0.35 / self.scale_y, 0.35 / self.scale_z)
         self.actor.setHpr(180, 0, 0)
         # use .play() instead of loop() to play it once.
 
@@ -68,9 +68,7 @@ class Enemy(Entity):
     def update(self):
         target = self.target
         dist = distance_xz(self.target.position, self.position)
-        if dist > 40:
-            return
-        if dist < 2 and target.immuneTimer <= 0:
+        if dist < 3 and target.immuneTimer <= 0:
             target.hp -= 30
             target.immuneTimer = target.maxImmuneTimer
             target.healthbar.value -= 30
@@ -80,7 +78,7 @@ class Enemy(Entity):
             self.leap()
         self.look_at_2d(target.position, 'y')
         hit_info = raycast(self.world_position + Vec3(0, 1, 0), self.forward, 30, ignore=(self,))
-        if hit_info.entity == target or self.grounded==False:
+        if hit_info.entity == target:
             if dist > 2:
                 self.position += self.forward * time.dt * self.speed
         
